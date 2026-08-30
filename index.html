@@ -1099,50 +1099,63 @@ function attachMapInteraction(svg) {
   let dragging = false;
   let moved = false;
 
-  let startClientX = 0;
-  let startClientY = 0;
+  let startX = 0;
+  let startY = 0;
   let startVB = null;
 
-  // ===== Touch / Pinch state =====
-  let activePointers = new Map();
+  const pointers = new Map();
+
   let pinchStartDistance = 0;
   let pinchStartVB = null;
-  let pinchStartCenter = null;
+  let pinchStartCenterWorld = null;
 
-  function distance(a, b) {
-    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  function getDistance(a, b) {
+    return Math.hypot(
+      a.clientX - b.clientX,
+      a.clientY - b.clientY
+    );
   }
 
-  function center(a, b) {
+  function getCenter(a, b) {
     return {
       x: (a.clientX + b.clientX) / 2,
       y: (a.clientY + b.clientY) / 2
     };
   }
 
-  // ==============================
-  // Mouse wheel zoom
-  // ==============================
-  svg.addEventListener('wheel', (e) => {
+  // Desktop wheel zoom
+  svg.addEventListener("wheel", (e) => {
     e.preventDefault();
 
-    const loc = svgPoint(svg, e.clientX, e.clientY);
+    const mouse = svgPoint(
+      svg,
+      e.clientX,
+      e.clientY
+    );
 
-    const factor = e.deltaY > 0 ? 1.15 : 0.87;
+    const factor =
+      e.deltaY > 0 ? 1.15 : 0.87;
 
     const newW = Math.max(
       baseViewBox.w * 0.05,
-      Math.min(baseViewBox.w * 1.5, viewBox.w * factor)
+      Math.min(
+        baseViewBox.w * 1.5,
+        viewBox.w * factor
+      )
     );
 
-    const newH = newW * (viewBox.h / viewBox.w);
+    const newH =
+      newW * (viewBox.h / viewBox.w);
 
-    const ratioX = (loc.x - viewBox.x) / viewBox.w;
-    const ratioY = (loc.y - viewBox.y) / viewBox.h;
+    const rx =
+      (mouse.x - viewBox.x) / viewBox.w;
+
+    const ry =
+      (mouse.y - viewBox.y) / viewBox.h;
 
     viewBox = {
-      x: loc.x - ratioX * newW,
-      y: loc.y - ratioY * newH,
+      x: mouse.x - rx * newW,
+      y: mouse.y - ry * newH,
       w: newW,
       h: newH
     };
@@ -1151,26 +1164,38 @@ function attachMapInteraction(svg) {
   }, { passive: false });
 
 
-  // ==============================
   // Pointer Down
-  // ==============================
-  svg.addEventListener('pointerdown', (e) => {
+  svg.addEventListener("pointerdown", (e) => {
 
-    activePointers.set(e.pointerId, {
+    pointers.set(e.pointerId, {
       clientX: e.clientX,
       clientY: e.clientY
     });
 
     svg.setPointerCapture(e.pointerId);
 
-    // إصبعين = Pinch Zoom
-    if (activePointers.size === 2) {
+    // Two fingers = pinch
+    if (pointers.size === 2) {
 
-      const [a, b] = [...activePointers.values()];
+      const [a, b] =
+        [...pointers.values()];
 
-      pinchStartDistance = distance(a, b);
-      pinchStartCenter = center(a, b);
-      pinchStartVB = { ...viewBox };
+      pinchStartDistance =
+        getDistance(a, b);
+
+      const center =
+        getCenter(a, b);
+
+      pinchStartCenterWorld =
+        svgPoint(
+          svg,
+          center.x,
+          center.y
+        );
+
+      pinchStartVB = {
+        ...viewBox
+      };
 
       dragging = false;
       moved = true;
@@ -1178,77 +1203,95 @@ function attachMapInteraction(svg) {
       return;
     }
 
-    // إصبع واحد = Drag
-    if (activePointers.size === 1) {
+    // One finger = drag
+    if (pointers.size === 1) {
 
       dragging = true;
       moved = false;
 
-      startClientX = e.clientX;
-      startClientY = e.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
 
-      startVB = { ...viewBox };
+      startVB = {
+        ...viewBox
+      };
     }
   });
 
 
-  // ==============================
   // Pointer Move
-  // ==============================
-  svg.addEventListener('pointermove', (e) => {
+  svg.addEventListener("pointermove", (e) => {
 
-    if (!activePointers.has(e.pointerId)) return;
+    if (!pointers.has(e.pointerId)) {
+      return;
+    }
 
-    activePointers.set(e.pointerId, {
+    pointers.set(e.pointerId, {
       clientX: e.clientX,
       clientY: e.clientY
     });
 
 
-    // ==================================
-    // Pinch Zoom - إصبعين
-    // ==================================
-    if (activePointers.size === 2) {
+    // Two fingers = pinch zoom
+    if (pointers.size === 2) {
 
-      const [a, b] = [...activePointers.values()];
+      const [a, b] =
+        [...pointers.values()];
 
-      const currentDistance = distance(a, b);
+      const currentDistance =
+        getDistance(a, b);
 
-      if (pinchStartDistance <= 0) return;
+      if (
+        !pinchStartDistance ||
+        !pinchStartVB ||
+        !pinchStartCenterWorld
+      ) {
+        return;
+      }
 
-      // نسبة التكبير
-      const zoomFactor =
-        pinchStartDistance / currentDistance;
+      const scale =
+        pinchStartDistance /
+        currentDistance;
 
-      let newW = pinchStartVB.w * zoomFactor;
+      let newW =
+        pinchStartVB.w * scale;
 
       newW = Math.max(
         baseViewBox.w * 0.05,
-        Math.min(baseViewBox.w * 1.5, newW)
+        Math.min(
+          baseViewBox.w * 1.5,
+          newW
+        )
       );
 
       const newH =
-        newW * (pinchStartVB.h / pinchStartVB.w);
+        newW *
+        (pinchStartVB.h /
+          pinchStartVB.w);
 
-      // نقطة المنتصف بين الإصبعين
-      const currentCenter = center(a, b);
+      const center =
+        getCenter(a, b);
 
-      const loc = svgPoint(
-        svg,
-        currentCenter.x,
-        currentCenter.y
-      );
+      const rect =
+        svg.getBoundingClientRect();
 
-      // نحافظ على النقطة اللي المستخدم بيعمل عليها pinch
       const ratioX =
-        (loc.x - pinchStartVB.x) / pinchStartVB.w;
+        (center.x - rect.left) /
+        rect.width;
 
       const ratioY =
-        (loc.y - pinchStartVB.y) / pinchStartVB.h;
+        (center.y - rect.top) /
+        rect.height;
 
       viewBox = {
-        x: loc.x - ratioX * newW,
-        y: loc.y - ratioY * newH,
+        x:
+          pinchStartCenterWorld.x -
+          ratioX * newW,
+
+        y:
+          pinchStartCenterWorld.y -
+          ratioY * newH,
+
         w: newW,
         h: newH
       };
@@ -1259,22 +1302,28 @@ function attachMapInteraction(svg) {
     }
 
 
-    // ==================================
-    // Drag - إصبع واحد
-    // ==================================
-    if (activePointers.size === 1 && dragging) {
+    // One finger = drag
+    if (
+      pointers.size === 1 &&
+      dragging
+    ) {
 
-      const dxPx = e.clientX - startClientX;
-      const dyPx = e.clientY - startClientY;
+      const dx =
+        e.clientX - startX;
+
+      const dy =
+        e.clientY - startY;
 
       if (
-        Math.abs(dxPx) > 4 ||
-        Math.abs(dyPx) > 4
+        Math.abs(dx) > 4 ||
+        Math.abs(dy) > 4
       ) {
         moved = true;
       }
 
-      if (!moved) return;
+      if (!moved) {
+        return;
+      }
 
       const rect =
         svg.getBoundingClientRect();
@@ -1288,8 +1337,13 @@ function attachMapInteraction(svg) {
       viewBox = {
         ...startVB,
 
-        x: startVB.x - dxPx * scaleX,
-        y: startVB.y - dyPx * scaleY
+        x:
+          startVB.x -
+          dx * scaleX,
+
+        y:
+          startVB.y -
+          dy * scaleY
       };
 
       applyViewBox();
@@ -1297,29 +1351,28 @@ function attachMapInteraction(svg) {
   });
 
 
-  // ==============================
   // Pointer Up
-  // ==============================
-  svg.addEventListener('pointerup', (e) => {
+  svg.addEventListener("pointerup", (e) => {
 
-    const wasSinglePointer =
-      activePointers.size === 1;
+    const wasSingle =
+      pointers.size === 1;
 
-    activePointers.delete(e.pointerId);
+    pointers.delete(e.pointerId);
 
-    // لو كان Pinch ورفعنا إصبع
-    if (activePointers.size < 2) {
+    if (pointers.size < 2) {
+
       pinchStartDistance = 0;
       pinchStartVB = null;
-      pinchStartCenter = null;
+      pinchStartCenterWorld = null;
     }
 
-    // الضغط العادي = إجابة
+    // Normal tap = answer
     if (
-      wasSinglePointer &&
+      wasSingle &&
       dragging &&
       !moved
     ) {
+
       const loc =
         svgPoint(
           svg,
@@ -1327,48 +1380,34 @@ function attachMapInteraction(svg) {
           e.clientY
         );
 
-      onMapAnswer(loc.x, loc.y);
+      onMapAnswer(
+        loc.x,
+        loc.y
+      );
     }
 
     dragging = false;
   });
 
 
-  // ==============================
   // Pointer Cancel
-  // ==============================
-  svg.addEventListener('pointercancel', (e) => {
-    activePointers.delete(e.pointerId);
+  svg.addEventListener(
+    "pointercancel",
+    (e) => {
 
-    dragging = false;
-    moved = true;
+      pointers.delete(e.pointerId);
 
-    if (activePointers.size < 2) {
-      pinchStartDistance = 0;
-      pinchStartVB = null;
-      pinchStartCenter = null;
+      dragging = false;
+      moved = true;
+
+      if (pointers.size < 2) {
+
+        pinchStartDistance = 0;
+        pinchStartVB = null;
+        pinchStartCenterWorld = null;
+      }
     }
-  });
-}
-
-  svg.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dxPx = e.clientX - startClientX, dyPx = e.clientY - startClientY;
-    if (Math.abs(dxPx) > 4 || Math.abs(dyPx) > 4) moved = true;
-    if (!moved) return;
-    const rect = svg.getBoundingClientRect();
-    const scaleX = startVB.w / rect.width, scaleY = startVB.h / rect.height;
-    viewBox = { ...startVB, x: startVB.x - dxPx * scaleX, y: startVB.y - dyPx * scaleY };
-    applyViewBox();
-  });
-
-  svg.addEventListener('pointerup', (e) => {
-    dragging = false;
-    if (!moved) {
-      const loc = svgPoint(svg, e.clientX, e.clientY);
-      onMapAnswer(loc.x, loc.y);
-    }
-  });
+  );
 }
 
 function hitTestCode(x, y) {
