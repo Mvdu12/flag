@@ -1096,27 +1096,260 @@ function svgPoint(svg, clientX, clientY) {
 
 // تكبير/تصغير وسحب عادي على الخريطة، مع تمييز اللمسة/الكليك البسيط (من غير سحب) كإجابة
 function attachMapInteraction(svg) {
-  let dragging = false, moved = false;
-  let startClientX = 0, startClientY = 0, startVB = null;
+  let dragging = false;
+  let moved = false;
 
+  let startClientX = 0;
+  let startClientY = 0;
+  let startVB = null;
+
+  // ===== Touch / Pinch state =====
+  let activePointers = new Map();
+  let pinchStartDistance = 0;
+  let pinchStartVB = null;
+  let pinchStartCenter = null;
+
+  function distance(a, b) {
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  }
+
+  function center(a, b) {
+    return {
+      x: (a.clientX + b.clientX) / 2,
+      y: (a.clientY + b.clientY) / 2
+    };
+  }
+
+  // ==============================
+  // Mouse wheel zoom
+  // ==============================
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
+
     const loc = svgPoint(svg, e.clientX, e.clientY);
+
     const factor = e.deltaY > 0 ? 1.15 : 0.87;
-    const newW = Math.max(baseViewBox.w * 0.05, Math.min(baseViewBox.w * 1.5, viewBox.w * factor));
+
+    const newW = Math.max(
+      baseViewBox.w * 0.05,
+      Math.min(baseViewBox.w * 1.5, viewBox.w * factor)
+    );
+
     const newH = newW * (viewBox.h / viewBox.w);
+
     const ratioX = (loc.x - viewBox.x) / viewBox.w;
     const ratioY = (loc.y - viewBox.y) / viewBox.h;
-    viewBox = { x: loc.x - ratioX * newW, y: loc.y - ratioY * newH, w: newW, h: newH };
+
+    viewBox = {
+      x: loc.x - ratioX * newW,
+      y: loc.y - ratioY * newH,
+      w: newW,
+      h: newH
+    };
+
     applyViewBox();
   }, { passive: false });
 
+
+  // ==============================
+  // Pointer Down
+  // ==============================
   svg.addEventListener('pointerdown', (e) => {
-    dragging = true; moved = false;
-    startClientX = e.clientX; startClientY = e.clientY;
-    startVB = { ...viewBox };
+
+    activePointers.set(e.pointerId, {
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+
     svg.setPointerCapture(e.pointerId);
+
+    // إصبعين = Pinch Zoom
+    if (activePointers.size === 2) {
+
+      const [a, b] = [...activePointers.values()];
+
+      pinchStartDistance = distance(a, b);
+      pinchStartCenter = center(a, b);
+      pinchStartVB = { ...viewBox };
+
+      dragging = false;
+      moved = true;
+
+      return;
+    }
+
+    // إصبع واحد = Drag
+    if (activePointers.size === 1) {
+
+      dragging = true;
+      moved = false;
+
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+
+      startVB = { ...viewBox };
+    }
   });
+
+
+  // ==============================
+  // Pointer Move
+  // ==============================
+  svg.addEventListener('pointermove', (e) => {
+
+    if (!activePointers.has(e.pointerId)) return;
+
+    activePointers.set(e.pointerId, {
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+
+
+    // ==================================
+    // Pinch Zoom - إصبعين
+    // ==================================
+    if (activePointers.size === 2) {
+
+      const [a, b] = [...activePointers.values()];
+
+      const currentDistance = distance(a, b);
+
+      if (pinchStartDistance <= 0) return;
+
+      // نسبة التكبير
+      const zoomFactor =
+        pinchStartDistance / currentDistance;
+
+      let newW = pinchStartVB.w * zoomFactor;
+
+      newW = Math.max(
+        baseViewBox.w * 0.05,
+        Math.min(baseViewBox.w * 1.5, newW)
+      );
+
+      const newH =
+        newW * (pinchStartVB.h / pinchStartVB.w);
+
+      // نقطة المنتصف بين الإصبعين
+      const currentCenter = center(a, b);
+
+      const loc = svgPoint(
+        svg,
+        currentCenter.x,
+        currentCenter.y
+      );
+
+      // نحافظ على النقطة اللي المستخدم بيعمل عليها pinch
+      const ratioX =
+        (loc.x - pinchStartVB.x) / pinchStartVB.w;
+
+      const ratioY =
+        (loc.y - pinchStartVB.y) / pinchStartVB.h;
+
+      viewBox = {
+        x: loc.x - ratioX * newW,
+        y: loc.y - ratioY * newH,
+        w: newW,
+        h: newH
+      };
+
+      applyViewBox();
+
+      return;
+    }
+
+
+    // ==================================
+    // Drag - إصبع واحد
+    // ==================================
+    if (activePointers.size === 1 && dragging) {
+
+      const dxPx = e.clientX - startClientX;
+      const dyPx = e.clientY - startClientY;
+
+      if (
+        Math.abs(dxPx) > 4 ||
+        Math.abs(dyPx) > 4
+      ) {
+        moved = true;
+      }
+
+      if (!moved) return;
+
+      const rect =
+        svg.getBoundingClientRect();
+
+      const scaleX =
+        startVB.w / rect.width;
+
+      const scaleY =
+        startVB.h / rect.height;
+
+      viewBox = {
+        ...startVB,
+
+        x: startVB.x - dxPx * scaleX,
+        y: startVB.y - dyPx * scaleY
+      };
+
+      applyViewBox();
+    }
+  });
+
+
+  // ==============================
+  // Pointer Up
+  // ==============================
+  svg.addEventListener('pointerup', (e) => {
+
+    const wasSinglePointer =
+      activePointers.size === 1;
+
+    activePointers.delete(e.pointerId);
+
+    // لو كان Pinch ورفعنا إصبع
+    if (activePointers.size < 2) {
+      pinchStartDistance = 0;
+      pinchStartVB = null;
+      pinchStartCenter = null;
+    }
+
+    // الضغط العادي = إجابة
+    if (
+      wasSinglePointer &&
+      dragging &&
+      !moved
+    ) {
+      const loc =
+        svgPoint(
+          svg,
+          e.clientX,
+          e.clientY
+        );
+
+      onMapAnswer(loc.x, loc.y);
+    }
+
+    dragging = false;
+  });
+
+
+  // ==============================
+  // Pointer Cancel
+  // ==============================
+  svg.addEventListener('pointercancel', (e) => {
+    activePointers.delete(e.pointerId);
+
+    dragging = false;
+    moved = true;
+
+    if (activePointers.size < 2) {
+      pinchStartDistance = 0;
+      pinchStartVB = null;
+      pinchStartCenter = null;
+    }
+  });
+}
 
   svg.addEventListener('pointermove', (e) => {
     if (!dragging) return;
