@@ -83,6 +83,9 @@
   .top-row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 14px; }
   .lives { font-size: 18px; letter-spacing: 3px; }
   .lives .lost { opacity: 0.25; filter: grayscale(1); }
+  .timer-display { font-size: 15px; font-weight: 800; color: var(--gold-bright); letter-spacing: 1px; }
+  .timer-display.urgent { color: var(--stamp-red); animation: pulse 0.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   .session-score { font-size: 12px; color: rgba(244,236,216,0.6); text-align: left; }
   .session-score b { color: var(--gold-bright); font-size: 16px; }
 
@@ -206,24 +209,40 @@
     <h1 id="titleText">خمّن العلم</h1>
   </header>
 
-  <!-- ===== شاشة القائمة: اختيار القارة ===== -->
-  <div id="menuScreen">
+  <!-- ===== شاشة 1: اختيار الفئة (أعلام / عواصم / خرايط) ===== -->
+  <div id="categoryScreen">
+    <div class="mode-grid" id="categoryGrid"></div>
+  </div>
+
+  <!-- ===== شاشة 2: عادي ولا بوليت (أعلام/عواصم بس) ===== -->
+  <div id="speedScreen" class="hidden">
+    <div class="mode-grid" id="speedGrid"></div>
+  </div>
+
+  <!-- ===== شاشة 2ب: مدة البوليت ===== -->
+  <div id="timeScreen" class="hidden">
+    <div class="mode-grid" id="timeGrid"></div>
+  </div>
+
+  <!-- ===== شاشة 3: اختيارات ولا اكتب (أعلام/عواصم)، أو دول ولا عواصم (خرايط) ===== -->
+  <div id="formatScreen" class="hidden">
+    <div class="mode-grid" id="formatGrid"></div>
+  </div>
+
+  <!-- ===== شاشة 4: اختيار القارة ===== -->
+  <div id="continentScreen" class="hidden">
     <div class="world-progress">
-      <div class="wp-label"><span id="wpLabel">تقدمك حول العالم</span><span><b id="worldKnown">0</b> / <span id="worldTotal">0</span></span></div>
+      <div class="wp-label"><span id="wpLabel">تقدمك</span><span><b id="worldKnown">0</b> / <span id="worldTotal">0</span></span></div>
       <div class="bar-track"><div class="bar-fill" id="worldBar" style="width:0%"></div></div>
     </div>
     <div class="continent-grid" id="continentGrid"></div>
-  </div>
-
-  <!-- ===== شاشة اختيار نوع اللعبة ===== -->
-  <div id="modeScreen" class="hidden">
-    <div class="mode-grid" id="modeGrid"></div>
   </div>
 
   <!-- ===== شاشة اللعب ===== -->
   <div id="gameArea" class="hidden">
     <div class="top-row">
       <div class="lives" id="livesDisplay">❤️❤️❤️</div>
+      <div class="timer-display hidden" id="timerDisplay">⏱️ 01:00</div>
       <div class="session-score"><span id="sessionScoreLabel">صح هذه الجولة</span><br><b id="sessionScore">0</b></div>
     </div>
 
@@ -532,54 +551,70 @@ const CONTINENTS = [
 
 const STR = {
   ar: {
-    eyebrow: "جواز السفر العالمي", title: "خمّن العلم", back: "↩ القائمة", langBtn: "English",
-    wpLabel: "تقدمك حول العالم", world: "العالم كله", knownSuffix: "دولة اتعرفت",
-    best: n => `أعلى نتيجة: ${n}`,
-    modeFlagChoice: "🏳️ علم ← دولة (اختيارات)", modeFlagChoiceDesc: "شوف العلم واختار اسم الدولة",
-    modeFlagType: "⌨️ علم ← دولة (اكتب الاسم)", modeFlagTypeDesc: "شوف العلم واكتب اسم الدولة بنفسك",
-    modeCapChoice: "🏛️ دولة ← عاصمة (اختيارات)", modeCapChoiceDesc: "شوف العلم واسم الدولة واختار عاصمتها",
-    modeCapType: "⌨️ دولة ← عاصمة (اكتب الاسم)", modeCapTypeDesc: "شوف العلم واسم الدولة واكتب العاصمة بنفسك",
-    modeMapCountry: "🗺️ حدد الدولة على الخريطة", modeMapCountryDesc: "هتشوف اسم دولة وعليك تدوس مكانها على الخريطة",
-    modeMapCapital: "🗺️ حدد الدولة من عاصمتها", modeMapCapitalDesc: "هتشوف اسم عاصمة وعليك تدوس مكان الدولة اللي ليها",
+    eyebrow: "جواز السفر العالمي", title: "خمّن العلم", back: "↩ رجوع", langBtn: "English",
+    wpLabel: "تقدمك", world: "العالم كله", knownSuffix: "دولة اتعرفت",
+    best: n => `أعلى نتيجة: ${n}`, bestStreak: n => `أعلى تتابع: ${n}`,
+    categoryFlags: "🏳️ أعلام", categoryFlagsDesc: "خمّن الدولة من علمها",
+    categoryCapitals: "🏛️ عواصم", categoryCapitalsDesc: "خمّن عاصمة كل دولة",
+    categoryMaps: "🗺️ خرايط", categoryMapsDesc: "حدد مكان الدولة على الخريطة",
+    speedNormal: "🛡️ عادي", speedNormalDesc: "3 محاولات في القارة، من غير وقت",
+    speedBullet: "⚡ بوليت", speedBulletDesc: "أكبر عدد إجابات صح متتالية في وقت محدد — أول غلطة تخلص الجولة",
+    time1: "⏱️ دقيقة واحدة", time5: "⏱️ 5 دقايق",
+    formatChoice: "🔘 اختيارات", formatChoiceDesc: "اختار الإجابة من 4 اختيارات",
+    formatType: "⌨️ اكتب بنفسك", formatTypeDesc: "اكتب الإجابة من غير مساعدة",
+    mapByCountry: "🏳️ حدد من اسم الدولة", mapByCountryDesc: "هيظهرلك اسم دولة، دوس مكانها",
+    mapByCapital: "🏛️ حدد من اسم العاصمة", mapByCapitalDesc: "هيظهرلك اسم عاصمة، دوس مكان دولتها",
     promptMapCountry: n => `فين ${n}؟`, promptMapCapital: n => `الدولة اللي عاصمتها ${n} فين؟`,
-    mapNote: "ملحوظة: بعض الدول الجزرية الصغيرة جدًا مش متاحة في وضع الخريطة.",
+    mapNote: "ملحوظة: بعض الدول الجزرية الصغيرة جدًا متاحة كمربع صغير على الخريطة بدل شكل الحدود.",
     remaining: n => `متبقّي ${n} في هذه الجولة`,
     promptFlag: "دي علم أنهي دولة؟", promptCap: "إيه عاصمة الدولة دي؟",
     correctBadge: "✅ صح!", wrongBadge: n => `❌ الصح: ${n}`, tryAgainBadge: "❌ مش هي، جرب تاني",
     typePlaceholderCountry: "اكتب اسم الدولة...", typePlaceholderCapital: "اكتب اسم العاصمة...",
-    submit: "تأكيد", next: "التالي ←", sessionScoreLabel: "صح هذه الجولة",
+    submit: "تأكيد", next: "التالي ←", sessionScoreLabel: "صح هذه الجولة", streakLabel: "متتالية",
     ofCount: n => `صح من ${n} دولة`,
+    bulletTimeUp: "⏱️ خلص الوقت!", bulletMistake: "طظ! أول غلطة بتخلص الجولة في البوليت",
+    bulletCleared: (n, s) => `برافو! عرفت كل الـ${n} دولة في ${s} ثانية!`,
+    bulletResultLine: n => `أفضل تتابع: ${n} إجابة صح`,
     cleared: "برافو! خلّصت كل الدول المتاحة هنا من غير ما تخسر تلات مرات!",
     zero: "محتاج تراجع خريطة العالم شوية، جرب تاني!",
     great: "أداء رائع! خسرت بس بعد ما عرفت كتير.",
     ok: "مش بطال! كمّل تلعب وهتحسّن رقمك.",
     updatedProgress: "تقدمك المُحدَّث", playAgain: "العب تاني", changeMode: "غيّر نوع اللعبة", menu: "القائمة",
-    chooseModeTitle: "اختار نوع اللعبة",
+    chooseCategoryTitle: "هتلعب إيه؟", chooseSpeedTitle: "عادي ولا بوليت؟", chooseTimeTitle: "مدة البوليت؟",
+    chooseFormatTitle: "اختار طريقة اللعب",
   },
   en: {
-    eyebrow: "World Passport", title: "Guess the Flag", back: "↩ Menu", langBtn: "العربية",
-    wpLabel: "Your world progress", world: "Whole World", knownSuffix: "countries known",
-    best: n => `Best score: ${n}`,
-    modeFlagChoice: "🏳️ Flag → Country (choices)", modeFlagChoiceDesc: "See the flag and pick the country name",
-    modeFlagType: "⌨️ Flag → Country (type)", modeFlagTypeDesc: "See the flag and type the country name yourself",
-    modeCapChoice: "🏛️ Country → Capital (choices)", modeCapChoiceDesc: "See the flag and country, then pick its capital",
-    modeCapType: "⌨️ Country → Capital (type)", modeCapTypeDesc: "See the flag and country, then type its capital",
-    modeMapCountry: "🗺️ Locate the country on the map", modeMapCountryDesc: "You'll see a country name — tap its spot on the map",
-    modeMapCapital: "🗺️ Locate by capital", modeMapCapitalDesc: "You'll see a capital name — tap the country it belongs to",
+    eyebrow: "World Passport", title: "Guess the Flag", back: "↩ Back", langBtn: "العربية",
+    wpLabel: "Your progress", world: "Whole World", knownSuffix: "countries known",
+    best: n => `Best score: ${n}`, bestStreak: n => `Best streak: ${n}`,
+    categoryFlags: "🏳️ Flags", categoryFlagsDesc: "Guess the country from its flag",
+    categoryCapitals: "🏛️ Capitals", categoryCapitalsDesc: "Guess each country's capital",
+    categoryMaps: "🗺️ Maps", categoryMapsDesc: "Locate the country on the map",
+    speedNormal: "🛡️ Normal", speedNormalDesc: "3 attempts per region, untimed",
+    speedBullet: "⚡ Bullet", speedBulletDesc: "Most consecutive correct answers in a time limit — one mistake ends the round",
+    time1: "⏱️ 1 minute", time5: "⏱️ 5 minutes",
+    formatChoice: "🔘 Multiple choice", formatChoiceDesc: "Pick the answer from 4 options",
+    formatType: "⌨️ Type it yourself", formatTypeDesc: "Type the answer with no hints",
+    mapByCountry: "🏳️ Locate by country name", mapByCountryDesc: "You'll see a country name — tap its spot",
+    mapByCapital: "🏛️ Locate by capital name", mapByCapitalDesc: "You'll see a capital name — tap its country",
     promptMapCountry: n => `Where is ${n}?`, promptMapCapital: n => `Where's the country whose capital is ${n}?`,
-    mapNote: "Note: a few very small island nations aren't available in map mode.",
+    mapNote: "Note: a few very small island nations show as a small square instead of a border shape.",
     remaining: n => `${n} left this round`,
     promptFlag: "Which country is this flag?", promptCap: "What's the capital of this country?",
     correctBadge: "✅ Correct!", wrongBadge: n => `❌ Correct: ${n}`, tryAgainBadge: "❌ Not quite, try again",
     typePlaceholderCountry: "Type the country name...", typePlaceholderCapital: "Type the capital name...",
-    submit: "Submit", next: "Next →", sessionScoreLabel: "Correct this round",
+    submit: "Submit", next: "Next →", sessionScoreLabel: "Correct this round", streakLabel: "streak",
     ofCount: n => `correct out of ${n}`,
+    bulletTimeUp: "⏱️ Time's up!", bulletMistake: "One mistake ends a bullet round!",
+    bulletCleared: (n, s) => `Bravo! You knew all ${n} countries in ${s} seconds!`,
+    bulletResultLine: n => `Best streak: ${n} correct`,
     cleared: "Bravo! You cleared every country here without losing 3 times!",
     zero: "Time to review the world map — try again!",
     great: "Great job! You lost only after knowing quite a lot.",
     ok: "Not bad! Keep playing to improve your score.",
     updatedProgress: "Your updated progress", playAgain: "Play again", changeMode: "Change mode", menu: "Menu",
-    chooseModeTitle: "Choose a game mode",
+    chooseCategoryTitle: "What do you want to play?", chooseSpeedTitle: "Normal or bullet?", chooseTimeTitle: "Bullet duration?",
+    chooseFormatTitle: "Choose a game mode",
   }
 };
 
@@ -712,16 +747,25 @@ function normalize(str) {
 }
 
 /* ============== حالة عامة تتراكم بين الجولات (في الذاكرة فقط) ============== */
-const knownCodes = new Set();       // أكواد الدول اللي اتعرفت صح (بأي وضع لعب)
-const highScores = {};              // أعلى نتيجة في جولة واحدة لكل مفتاح (قارة أو "world")
+const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set() }; // لكل فئة تقدّمها الخاص
+const highScores = {}; // أعلى نتيجة/تتابع لكل تركيبة فئة+سرعة+وقت+قارة
 
+function categoryKnownSet() { return knownByCategory[selectedCategory]; }
 function countInContinent(key) { return countries.filter(c => c.cont === key).length; }
-function knownInContinent(key) { return countries.filter(c => c.cont === key && knownCodes.has(c.code)).length; }
+function knownInContinent(key) { return countries.filter(c => c.cont === key && categoryKnownSet().has(c.code)).length; }
+function highScoreKey(continentKey) {
+  const cont = continentKey || 'world';
+  if (selectedSpeed === 'bullet') return `${currentMode}|bullet|${selectedTimeLimit}|${cont}`;
+  return `${currentMode}|normal|${cont}`;
+}
 
 /* ================= عناصر DOM ================= */
 const htmlRoot = document.getElementById('htmlRoot');
-const menuScreen = document.getElementById('menuScreen');
-const modeScreen = document.getElementById('modeScreen');
+const categoryScreen = document.getElementById('categoryScreen');
+const speedScreen = document.getElementById('speedScreen');
+const timeScreen = document.getElementById('timeScreen');
+const formatScreen = document.getElementById('formatScreen');
+const continentScreen = document.getElementById('continentScreen');
 const gameArea = document.getElementById('gameArea');
 const endScreen = document.getElementById('endScreen');
 const backBtn = document.getElementById('backBtn');
@@ -729,14 +773,18 @@ const langBtn = document.getElementById('langBtn');
 const eyebrowText = document.getElementById('eyebrowText');
 const titleText = document.getElementById('titleText');
 
+const categoryGrid = document.getElementById('categoryGrid');
+const speedGrid = document.getElementById('speedGrid');
+const timeGrid = document.getElementById('timeGrid');
+const formatGrid = document.getElementById('formatGrid');
 const continentGrid = document.getElementById('continentGrid');
 const wpLabel = document.getElementById('wpLabel');
 const worldKnownEl = document.getElementById('worldKnown');
 const worldTotalEl = document.getElementById('worldTotal');
 const worldBar = document.getElementById('worldBar');
-const modeGrid = document.getElementById('modeGrid');
 
 const livesDisplay = document.getElementById('livesDisplay');
+const timerDisplay = document.getElementById('timerDisplay');
 const sessionScoreLabelEl = document.getElementById('sessionScoreLabel');
 const sessionScoreEl = document.getElementById('sessionScore');
 const countryLabel = document.getElementById('countryLabel');
@@ -762,11 +810,26 @@ const restartBtn = document.getElementById('restartBtn');
 const changeModeBtn = document.getElementById('changeModeBtn');
 const menuBtn = document.getElementById('menuBtn');
 
-function showScreen(el) {
-  [menuScreen, modeScreen, gameArea, endScreen].forEach(s => s.classList.add('hidden'));
+const ALL_SCREENS = [categoryScreen, speedScreen, timeScreen, formatScreen, continentScreen, gameArea, endScreen];
+let screenStack = [];
+let currentScreenEl = categoryScreen;
+
+function showScreenRaw(el) {
+  ALL_SCREENS.forEach(s => s.classList.add('hidden'));
   el.classList.remove('hidden');
-  backBtn.classList.toggle('hidden', el === menuScreen);
+  currentScreenEl = el;
+  backBtn.classList.toggle('hidden', el === categoryScreen);
 }
+function navTo(el) {
+  if (currentScreenEl && currentScreenEl !== el) screenStack.push(currentScreenEl);
+  showScreenRaw(el);
+}
+function goBack() {
+  if (isMapMode() && !gameArea.classList.contains('hidden')) stopBulletTimer();
+  const prev = screenStack.pop();
+  showScreenRaw(prev || categoryScreen);
+}
+backBtn.addEventListener('click', goBack);
 
 /* ================= اللغة ================= */
 function applyStaticText() {
@@ -786,74 +849,138 @@ langBtn.addEventListener('click', () => {
   LANG = LANG === 'ar' ? 'en' : 'ar';
   applyStaticText();
   // إعادة رسم الشاشة الحالية باللغة الجديدة
-  if (!menuScreen.classList.contains('hidden')) renderMenu();
-  else if (!modeScreen.classList.contains('hidden')) renderModeScreen();
-  else if (!gameArea.classList.contains('hidden')) { updateGameHeader(); renderRound(); }
-  else if (!endScreen.classList.contains('hidden')) renderEndScreen(lastEndReason);
+  if (currentScreenEl === categoryScreen) renderCategoryScreen();
+  else if (currentScreenEl === speedScreen) renderSpeedScreen();
+  else if (currentScreenEl === timeScreen) renderTimeScreen();
+  else if (currentScreenEl === formatScreen) renderFormatScreen();
+  else if (currentScreenEl === continentScreen) renderContinentScreen();
+  else if (currentScreenEl === gameArea) { updateGameHeader(); renderRound(); }
+  else if (currentScreenEl === endScreen) renderEndScreen(lastEndReason);
 });
 
-/* ================= شاشة القائمة (اختيار القارة) ================= */
-function renderMenu() {
+/* ================= حالة الاختيارات المتتالية ================= */
+let selectedCategory = 'flags';  // 'flags' | 'capitals' | 'maps'
+let selectedSpeed = 'normal';    // 'normal' | 'bullet'
+let selectedTimeLimit = 60;      // بالثواني (للبوليت بس)
+
+/* ---- شاشة 1: الفئة ---- */
+function renderCategoryScreen() {
+  const cats = [
+    { id: 'flags',    label: t().categoryFlags,    desc: t().categoryFlagsDesc },
+    { id: 'capitals', label: t().categoryCapitals, desc: t().categoryCapitalsDesc },
+    { id: 'maps',     label: t().categoryMaps,     desc: t().categoryMapsDesc },
+  ];
+  categoryGrid.innerHTML = '';
+  cats.forEach(c => {
+    const card = document.createElement('button');
+    card.className = 'mode-card';
+    card.innerHTML = `<div class="cc-name">${c.label}</div><div class="mode-desc">${c.desc}</div>`;
+    card.addEventListener('click', () => chooseCategory(c.id));
+    categoryGrid.appendChild(card);
+  });
+}
+function chooseCategory(id) {
+  selectedCategory = id;
+  screenStack = [];
+  if (id === 'maps') { renderFormatScreen(); navTo(formatScreen); }
+  else { renderSpeedScreen(); navTo(speedScreen); }
+}
+
+/* ---- شاشة 2: عادي/بوليت (أعلام وعواصم بس) ---- */
+function renderSpeedScreen() {
+  const speeds = [
+    { id: 'normal', label: t().speedNormal, desc: t().speedNormalDesc },
+    { id: 'bullet', label: t().speedBullet, desc: t().speedBulletDesc },
+  ];
+  speedGrid.innerHTML = '';
+  speeds.forEach(s => {
+    const card = document.createElement('button');
+    card.className = 'mode-card';
+    card.innerHTML = `<div class="cc-name">${s.label}</div><div class="mode-desc">${s.desc}</div>`;
+    card.addEventListener('click', () => chooseSpeed(s.id));
+    speedGrid.appendChild(card);
+  });
+}
+function chooseSpeed(id) {
+  selectedSpeed = id;
+  if (id === 'bullet') { renderTimeScreen(); navTo(timeScreen); }
+  else { renderFormatScreen(); navTo(formatScreen); }
+}
+
+/* ---- شاشة 2ب: مدة البوليت ---- */
+function renderTimeScreen() {
+  const times = [ { sec: 60, label: t().time1 }, { sec: 300, label: t().time5 } ];
+  timeGrid.innerHTML = '';
+  times.forEach(tm => {
+    const card = document.createElement('button');
+    card.className = 'mode-card';
+    card.innerHTML = `<div class="cc-name">${tm.label}</div>`;
+    card.addEventListener('click', () => { selectedTimeLimit = tm.sec; renderFormatScreen(); navTo(formatScreen); });
+    timeGrid.appendChild(card);
+  });
+}
+
+/* ---- شاشة 3: اختيارات/اكتب (أعلام وعواصم)، أو دول/عواصم (خرايط) ---- */
+function renderFormatScreen() {
+  formatGrid.innerHTML = '';
+  let options;
+  if (selectedCategory === 'maps') {
+    options = [
+      { id: 'map_country', label: t().mapByCountry, desc: t().mapByCountryDesc },
+      { id: 'map_capital', label: t().mapByCapital, desc: t().mapByCapitalDesc },
+    ];
+  } else {
+    const prefix = selectedCategory === 'flags' ? 'flag' : 'cap';
+    options = [
+      { id: `${prefix}_choice`, label: t().formatChoice, desc: t().formatChoiceDesc },
+      { id: `${prefix}_type`,   label: t().formatType,   desc: t().formatTypeDesc },
+    ];
+  }
+  options.forEach(o => {
+    const card = document.createElement('button');
+    card.className = 'mode-card';
+    card.innerHTML = `<div class="cc-name">${o.label}</div><div class="mode-desc">${o.desc}</div>`;
+    card.addEventListener('click', () => { currentMode = o.id; renderContinentScreen(); navTo(continentScreen); });
+    formatGrid.appendChild(card);
+  });
+}
+
+/* ---- شاشة 4: القارة ---- */
+function renderContinentScreen() {
+  const knownSet = categoryKnownSet();
   worldTotalEl.textContent = countries.length;
-  worldKnownEl.textContent = knownCodes.size;
-  worldBar.style.width = `${(knownCodes.size / countries.length) * 100}%`;
+  worldKnownEl.textContent = knownSet.size;
+  worldBar.style.width = `${(knownSet.size / countries.length) * 100}%`;
 
   continentGrid.innerHTML = '';
 
-  const worldBest = highScores['world'] || 0;
+  const worldBestKey = highScoreKey(null);
+  const worldBest = highScores[worldBestKey] || 0;
   const worldCard = document.createElement('button');
   worldCard.className = 'continent-card world';
   worldCard.innerHTML = `
     <div class="cc-top"><span class="cc-emoji">🌐</span><span class="cc-name">${t().world}</span></div>
-    <div class="cc-count">${knownCodes.size} / ${countries.length} ${t().knownSuffix}</div>
-    <div class="cc-best">${t().best(worldBest)}</div>
-    <div class="bar-track"><div class="bar-fill" style="width:${(knownCodes.size/countries.length)*100}%"></div></div>
+    <div class="cc-count">${knownSet.size} / ${countries.length} ${t().knownSuffix}</div>
+    <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(worldBest) : t().best(worldBest)}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(knownSet.size/countries.length)*100}%"></div></div>
   `;
-  worldCard.addEventListener('click', () => openModeScreen(null));
+  worldCard.addEventListener('click', () => startGame(null));
   continentGrid.appendChild(worldCard);
 
   CONTINENTS.forEach(cont => {
     const total = countInContinent(cont.key);
     const known = knownInContinent(cont.key);
-    const best = highScores[cont.key] || 0;
+    const best = highScores[highScoreKey(cont.key)] || 0;
     const card = document.createElement('button');
     card.className = 'continent-card';
     card.innerHTML = `
       <div class="cc-top"><span class="cc-emoji">${cont.emoji}</span><span class="cc-name">${contName(cont)}</span></div>
       <div class="cc-count">${known} / ${total} ${t().knownSuffix}</div>
-      <div class="cc-best">${t().best(best)}</div>
+      <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(known/total)*100}%"></div></div>
     `;
-    card.addEventListener('click', () => openModeScreen(cont.key));
+    card.addEventListener('click', () => startGame(cont.key));
     continentGrid.appendChild(card);
-  });
-}
-
-/* ================= شاشة اختيار نوع اللعبة ================= */
-let pendingContinentKey = null;
-
-function openModeScreen(continentKey) {
-  pendingContinentKey = continentKey;
-  renderModeScreen();
-  showScreen(modeScreen);
-}
-
-function renderModeScreen() {
-  const modes = [
-    { id: "flag_choice", label: t().modeFlagChoice, desc: t().modeFlagChoiceDesc },
-    { id: "flag_type",   label: t().modeFlagType,   desc: t().modeFlagTypeDesc },
-    { id: "cap_choice",  label: t().modeCapChoice,  desc: t().modeCapChoiceDesc },
-    { id: "cap_type",    label: t().modeCapType,    desc: t().modeCapTypeDesc },
-    { id: "map_country", label: t().modeMapCountry, desc: t().modeMapCountryDesc },
-    { id: "map_capital", label: t().modeMapCapital, desc: t().modeMapCapitalDesc },
-  ];
-  modeGrid.innerHTML = '';
-  modes.forEach(m => {
-    const card = document.createElement('button');
-    card.className = 'mode-card';
-    card.innerHTML = `<div class="cc-name">${m.label}</div><div class="mode-desc">${m.desc}</div>`;
-    card.addEventListener('click', () => startGame(pendingContinentKey, m.id));
-    modeGrid.appendChild(card);
   });
 }
 
@@ -874,10 +1001,33 @@ let baseViewBox = { x: 0, y: -90, w: 360, h: 180 };
 let viewBox = { x: 0, y: -90, w: 360, h: 180 };
 
 function isMapMode() { return currentMode === 'map_country' || currentMode === 'map_capital'; }
+function isBullet() { return selectedSpeed === 'bullet' && !isMapMode(); }
 
-function startGame(continentKey, mode) {
+let bulletTimerHandle = null;
+let bulletRemaining = 0;
+
+function stopBulletTimer() {
+  if (bulletTimerHandle) { clearInterval(bulletTimerHandle); bulletTimerHandle = null; }
+}
+function updateTimerDisplay() {
+  const m = Math.floor(bulletRemaining / 60), s = bulletRemaining % 60;
+  timerDisplay.textContent = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  timerDisplay.classList.toggle('urgent', bulletRemaining <= 10);
+}
+function startBulletTimer() {
+  stopBulletTimer();
+  bulletRemaining = selectedTimeLimit;
+  updateTimerDisplay();
+  bulletTimerHandle = setInterval(() => {
+    bulletRemaining--;
+    updateTimerDisplay();
+    if (bulletRemaining <= 0) { stopBulletTimer(); endGame('bullet_time'); }
+  }, 1000);
+}
+
+function startGame(continentKey) {
+  stopBulletTimer();
   currentContinentKey = continentKey;
-  currentMode = mode;
   pool = continentKey ? countries.filter(c => c.cont === continentKey) : countries;
   if (isMapMode()) pool = pool.filter(c => mapDataByCode[c.code] || MARKER_POINTS[c.code]);
   deck = shuffle(pool);
@@ -885,7 +1035,9 @@ function startGame(continentKey, mode) {
   lives = MAX_LIVES;
   sessionCorrect = 0;
 
-  showScreen(gameArea);
+  navTo(gameArea);
+  livesDisplay.classList.toggle('hidden', isBullet());
+  timerDisplay.classList.toggle('hidden', !isBullet());
   updateGameHeader();
 
   if (isMapMode()) {
@@ -894,6 +1046,8 @@ function startGame(continentKey, mode) {
     baseViewBox = { x, y, w, h };
     buildMapSVG();
   }
+
+  if (isBullet()) startBulletTimer();
 
   renderRound();
 }
@@ -1127,7 +1281,7 @@ function renderRound() {
 function markResult(isCorrect, correctLabel) {
   if (isCorrect) {
     sessionCorrect++;
-    knownCodes.add(currentCorrect.code);
+    categoryKnownSet().add(currentCorrect.code);
     verdictBadge.textContent = t().correctBadge;
     verdictBadge.classList.add('correct');
   } else {
@@ -1140,6 +1294,30 @@ function markResult(isCorrect, correctLabel) {
   nextBtn.classList.add('ready');
 }
 
+function handleAnswerResult(isCorrect, correctLabel) {
+  if (isBullet()) {
+    if (isCorrect) {
+      sessionCorrect++;
+      categoryKnownSet().add(currentCorrect.code);
+      verdictBadge.textContent = t().correctBadge;
+      verdictBadge.classList.add('correct', 'show');
+      updateGameHeader();
+      deckIndex++;
+      setTimeout(() => {
+        if (deckIndex >= deck.length) { endGame('bullet_clear'); }
+        else renderRound();
+      }, 350);
+    } else {
+      verdictBadge.textContent = t().wrongBadge(correctLabel);
+      verdictBadge.classList.add('wrong', 'show');
+      updateGameHeader();
+      setTimeout(() => endGame('bullet_mistake'), 900);
+    }
+    return;
+  }
+  markResult(isCorrect, correctLabel);
+}
+
 function selectChoice(opt, btnEl) {
   if (answered) return;
   answered = true;
@@ -1150,7 +1328,7 @@ function selectChoice(opt, btnEl) {
     if (btn.textContent === correctLabel) btn.classList.add('correct');
     else if (btn === btnEl) btn.classList.add('incorrect');
   });
-  markResult(isCorrect, correctLabel);
+  handleAnswerResult(isCorrect, correctLabel);
 }
 
 function submitTyped() {
@@ -1160,7 +1338,7 @@ function submitTyped() {
   const isCorrect = normalize(typeInput.value) === normalize(correctLabel) && normalize(typeInput.value).length > 0;
   typeInput.disabled = true;
   typeSubmit.disabled = true;
-  markResult(isCorrect, correctLabel);
+  handleAnswerResult(isCorrect, correctLabel);
 }
 
 typeSubmit.addEventListener('click', submitTyped);
@@ -1168,26 +1346,42 @@ typeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitType
 
 nextBtn.addEventListener('click', () => {
   deckIndex++;
-  if (lives <= 0) { endGame('lost'); return; }
+  if (!isBullet() && lives <= 0) { endGame('lost'); return; }
   renderRound();
 });
 
 function endGame(reason) {
   lastEndReason = reason;
-  const key = currentContinentKey || 'world';
+  stopBulletTimer();
+  const key = highScoreKey(currentContinentKey);
   highScores[key] = Math.max(highScores[key] || 0, sessionCorrect);
   renderEndScreen(reason);
-  showScreen(endScreen);
+  navTo(endScreen);
 }
 
 function renderEndScreen(reason) {
   finalScore.textContent = sessionCorrect;
-  finalOf.textContent = t().ofCount(pool.length);
 
-  if (reason === 'cleared') { endIcon.textContent = '🏆'; finalMsg.textContent = t().cleared; }
-  else if (sessionCorrect === 0) { endIcon.textContent = '🗺️'; finalMsg.textContent = t().zero; }
-  else if (sessionCorrect >= pool.length * 0.7) { endIcon.textContent = '👏'; finalMsg.textContent = t().great; }
-  else { endIcon.textContent = '🚩'; finalMsg.textContent = t().ok; }
+  if (isBullet()) {
+    finalOf.textContent = t().bulletResultLine(sessionCorrect);
+    if (reason === 'bullet_clear') {
+      const elapsed = selectedTimeLimit - bulletRemaining;
+      endIcon.textContent = '🏆';
+      finalMsg.textContent = t().bulletCleared(pool.length, elapsed);
+    } else if (reason === 'bullet_time') {
+      endIcon.textContent = '⏱️';
+      finalMsg.textContent = t().bulletTimeUp;
+    } else {
+      endIcon.textContent = '💥';
+      finalMsg.textContent = t().bulletMistake;
+    }
+  } else {
+    finalOf.textContent = t().ofCount(pool.length);
+    if (reason === 'cleared') { endIcon.textContent = '🏆'; finalMsg.textContent = t().cleared; }
+    else if (sessionCorrect === 0) { endIcon.textContent = '🗺️'; finalMsg.textContent = t().zero; }
+    else if (sessionCorrect >= pool.length * 0.7) { endIcon.textContent = '👏'; finalMsg.textContent = t().great; }
+    else { endIcon.textContent = '🚩'; finalMsg.textContent = t().ok; }
+  }
 
   progressTitle.textContent = t().updatedProgress;
   restartBtn.textContent = t().playAgain;
@@ -1197,12 +1391,13 @@ function renderEndScreen(reason) {
 }
 
 function renderProgressList() {
+  const knownSet = categoryKnownSet();
   progressRows.innerHTML = '';
   const totalRow = document.createElement('div');
   totalRow.className = 'pl-row total';
   totalRow.innerHTML = `
-    <div class="pl-top"><span>🌐 ${t().world}</span><b>${knownCodes.size} / ${countries.length}</b></div>
-    <div class="bar-track"><div class="bar-fill" style="width:${(knownCodes.size/countries.length)*100}%"></div></div>
+    <div class="pl-top"><span>🌐 ${t().world}</span><b>${knownSet.size} / ${countries.length}</b></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(knownSet.size/countries.length)*100}%"></div></div>
   `;
   progressRows.appendChild(totalRow);
 
@@ -1219,17 +1414,21 @@ function renderProgressList() {
   });
 }
 
-restartBtn.addEventListener('click', () => startGame(currentContinentKey, currentMode));
-changeModeBtn.addEventListener('click', () => openModeScreen(currentContinentKey));
-menuBtn.addEventListener('click', () => { renderMenu(); showScreen(menuScreen); });
-backBtn.addEventListener('click', () => {
-  if (!modeScreen.classList.contains('hidden')) { renderMenu(); showScreen(menuScreen); }
-  else { renderMenu(); showScreen(menuScreen); }
+restartBtn.addEventListener('click', () => startGame(currentContinentKey));
+changeModeBtn.addEventListener('click', () => {
+  screenStack = [];
+  renderFormatScreen();
+  showScreenRaw(formatScreen);
+});
+menuBtn.addEventListener('click', () => {
+  screenStack = [];
+  renderCategoryScreen();
+  showScreenRaw(categoryScreen);
 });
 
 applyStaticText();
-renderMenu();
-showScreen(menuScreen);
+renderCategoryScreen();
+showScreenRaw(categoryScreen);
 </script>
 
 </body>
