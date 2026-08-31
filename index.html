@@ -19,9 +19,14 @@
     --green: #4c995a;
     --line: rgba(201,162,75,0.35);
   }
+  html {
+    /* Fluid base size: text and rem-based spacing grow with the viewport,
+       from a normal mobile size up to a noticeably larger desktop size. */
+    font-size: clamp(16px, 0.55vw + 12px, 22px);
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
-    margin: 0; padding: 0; min-height: 100vh;
+    margin: 0; padding: 0; min-height: 100vh; min-height: 100dvh;
     overflow-x: hidden;
     background:
       radial-gradient(circle at 20% 15%, rgba(201,162,75,0.08), transparent 45%),
@@ -29,54 +34,59 @@
       var(--navy-deep);
     font-family: 'Tahoma', 'Segoe UI', sans-serif;
     color: var(--parchment);
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px;
+    display: flex; align-items: stretch; justify-content: center;
+    padding: 1rem;
     touch-action: manipulation; /* avoid the double-tap-to-zoom delay on mobile browsers */
   }
   button { touch-action: manipulation; }
 
+  /* The panel always fills the full available height, at any screen
+     size — no floating "postage stamp" card with dead space above/below.
+     Width still caps at a readable column, but grows to fill on phones. */
   .passport {
-    width: 100%; max-width: 580px;
+    width: min(94vw, 1200px);
+    min-height: calc(100vh - 32px); min-height: calc(100dvh - 32px);
+    display: flex; flex-direction: column; justify-content: center;
     background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
-    border: 1px solid var(--line); border-radius: 14px;
+    border: 1px solid var(--line); border-radius: 0.875rem;
     box-shadow: 0 0 0 6px rgba(201,162,75,0.06), 0 30px 60px rgba(0,0,0,0.5);
-    padding: 22px 18px 18px; position: relative; overflow: hidden;
+    padding: 1.375rem 18px 18px; position: relative; overflow: hidden;
   }
   .passport::before {
     content: ""; position: absolute; inset: 10px;
-    border: 1px solid var(--line); border-radius: 8px; pointer-events: none;
+    border: 1px solid var(--line); border-radius: 0.5rem; pointer-events: none;
   }
   header { text-align: center; margin-bottom: 14px; position: relative; }
   .top-controls {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 0.5rem;
   }
-  .top-controls-side { display: flex; gap: 6px; }
+  .top-controls-side { display: flex; gap: 0.375rem; }
   .back-btn, .lang-btn, .icon-btn {
     background: none; border: 1px solid var(--line); color: var(--parchment);
-    font-size: 12px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-family: inherit;
-    min-height: 36px;
+    font-size: 0.75rem; padding: 0.5rem 10px; border-radius: 0.375rem; cursor: pointer; font-family: inherit;
+    min-height: 2.25rem;
   }
   .back-btn:hover, .lang-btn:hover, .icon-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
   .eyebrow {
-    letter-spacing: 4px; font-size: 11px; color: var(--gold); text-transform: uppercase;
+    letter-spacing: 0.25rem; font-size: 0.6875rem; color: var(--gold); text-transform: uppercase;
     margin-bottom: 6px; font-weight: 600;
   }
-  h1 { font-family: 'Georgia', 'Amiri', serif; font-size: clamp(22px, 6vw, 28px); margin: 0; color: var(--parchment); letter-spacing: 1px; }
+  h1 { font-family: 'Georgia', 'Amiri', serif; font-size: clamp(22px, 6vw, 28px); margin: 0; color: var(--parchment); letter-spacing: 0.0625rem; }
 
   .world-progress { margin-bottom: 18px; }
   .world-progress .wp-label {
-    display: flex; justify-content: space-between; font-size: 12px; color: rgba(244,236,216,0.65); margin-bottom: 6px;
+    display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(244,236,216,0.65); margin-bottom: 6px;
   }
   .world-progress .wp-label b { color: var(--gold-bright); }
-  .bar-track { height: 8px; border-radius: 4px; background: rgba(244,236,216,0.08); overflow: hidden; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 4px; transition: width 0.4s ease; }
+  .bar-track { height: 8px; border-radius: 0.25rem; background: rgba(244,236,216,0.08); overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 0.25rem; transition: width 0.4s ease; }
 
-  .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
   .continent-card, .mode-card {
-    background: rgba(244,236,216,0.04); border: 1px solid var(--line); border-radius: 10px;
-    padding: 14px 12px; text-align: right; cursor: pointer; font-family: inherit; color: var(--parchment);
+    background: rgba(244,236,216,0.04); border: 1px solid var(--line); border-radius: 0.625rem;
+    padding: 0.875rem 12px; text-align: right; cursor: pointer; font-family: inherit; color: var(--parchment);
     transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   html[dir="ltr"] .continent-card, html[dir="ltr"] .mode-card { text-align: left; }
   .continent-card:hover, .mode-card:hover { background: rgba(201,162,75,0.1); border-color: var(--gold); }
@@ -84,54 +94,54 @@
   .continent-card.world { grid-column: 1 / -1; text-align: center; background: rgba(201,162,75,0.08); }
   .mode-card { grid-column: 1 / -1; text-align: center; }
   .cc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .continent-card.world .cc-top, .mode-card .cc-top { justify-content: center; gap: 10px; }
-  .cc-emoji { font-size: 20px; }
-  .cc-name { font-weight: 700; font-size: 14px; }
-  .cc-count { font-size: 11px; color: rgba(244,236,216,0.55); margin-top: 4px; }
-  .cc-best { font-size: 11px; color: var(--gold-bright); margin-top: 2px; }
+  .continent-card.world .cc-top, .mode-card .cc-top { justify-content: center; gap: 0.625rem; }
+  .cc-emoji { font-size: 1.25rem; }
+  .cc-name { font-weight: 700; font-size: 0.875rem; }
+  .cc-count { font-size: 0.6875rem; color: rgba(244,236,216,0.55); margin-top: 4px; }
+  .cc-best { font-size: 0.6875rem; color: var(--gold-bright); margin-top: 2px; }
   .continent-card .bar-track { height: 5px; margin-top: 8px; }
-  .mode-desc { font-size: 11px; color: rgba(244,236,216,0.5); margin-top: 4px; }
+  .mode-desc { font-size: 0.6875rem; color: rgba(244,236,216,0.5); margin-top: 4px; }
 
-  .top-row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 14px; flex-wrap: wrap; gap: 6px; }
-  .lives { font-size: 18px; letter-spacing: 3px; }
+  .top-row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 14px; flex-wrap: wrap; gap: 0.375rem; }
+  .lives { font-size: 1.125rem; letter-spacing: 0.1875rem; }
   .lives .lost { opacity: 0.25; filter: grayscale(1); }
-  .timer-display { font-size: 15px; font-weight: 800; color: var(--gold-bright); letter-spacing: 1px; }
+  .timer-display { font-size: 0.9375rem; font-weight: 800; color: var(--gold-bright); letter-spacing: 0.0625rem; }
   .timer-display.urgent { color: var(--stamp-red); animation: pulse 0.6s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .session-score { font-size: 12px; color: rgba(244,236,216,0.6); text-align: left; }
-  .session-score b { color: var(--gold-bright); font-size: 16px; }
+  .session-score { font-size: 0.75rem; color: rgba(244,236,216,0.6); text-align: left; }
+  .session-score b { color: var(--gold-bright); font-size: 1rem; }
 
   .stage {
-    background: rgba(244,236,216,0.03); border: 1px solid var(--line); border-radius: 10px;
-    padding: 16px 14px; text-align: center; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px; min-height: 170px;
+    background: rgba(244,236,216,0.03); border: 1px solid var(--line); border-radius: 0.625rem;
+    padding: 1rem 14px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0.625rem; min-height: 10.625rem;
   }
-  .country-label { font-size: 18px; font-weight: 700; color: var(--gold-bright); }
+  .country-label { font-size: 1.125rem; font-weight: 700; color: var(--gold-bright); }
   .flag-frame {
-    width: 180px; max-width: 60vw; height: 120px; border-radius: 6px; overflow: hidden;
+    width: 180px; max-width: 60vw; height: 120px; border-radius: 0.375rem; overflow: hidden;
     box-shadow: 0 10px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--line); background: rgba(0,0,0,0.15);
   }
-  .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .prompt { font-size: 12px; color: rgba(244,236,216,0.5); letter-spacing: 1px; }
+  .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; transition: none; }
+  .prompt { font-size: 0.75rem; color: rgba(244,236,216,0.5); letter-spacing: 0.0625rem; }
 
   /* Result badge sits below the flag/map (never on top of it) so it's always visible */
   .verdict-badge {
-    display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+    display: inline-flex; flex-direction: column; align-items: center; gap: 0.125rem;
     border: 2px solid var(--stamp-red); color: var(--stamp-red);
-    border-radius: 16px; padding: 6px 16px; font-weight: 800; font-size: 13px;
+    border-radius: 1rem; padding: 0.375rem 16px; font-weight: 800; font-size: 0.8125rem;
     opacity: 0; transform: translateY(-6px); transition: all 0.25s ease; max-width: 100%;
   }
   .verdict-badge.show { opacity: 1; transform: translateY(0); }
   .verdict-badge.correct { border-color: var(--green); color: #bfe6c4; background: rgba(76,153,90,0.12); }
   .verdict-badge.wrong { border-color: var(--stamp-red); color: #f0b8b0; background: rgba(163,55,44,0.12); }
-  .verdict-badge .verdict-sub { font-weight: 600; font-size: 11px; opacity: 0.85; }
+  .verdict-badge .verdict-sub { font-weight: 600; font-size: 0.6875rem; opacity: 0.85; }
 
-  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; width: 100%; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-top: 4px; width: 100%; }
   .choice {
     background: rgba(244,236,216,0.04); border: 1px solid var(--line); color: var(--parchment);
-    padding: 13px 10px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit;
+    padding: 0.8125rem 10px; border-radius: 0.5rem; font-size: 0.875rem; cursor: pointer; font-family: inherit;
     transition: background 0.15s, border-color 0.15s, transform 0.1s; text-align: center;
-    min-height: 46px;
+    min-height: 2.875rem;
   }
   .choice:hover:not(:disabled) { background: rgba(201,162,75,0.12); border-color: var(--gold); }
   .choice:active:not(:disabled) { transform: scale(0.97); }
@@ -139,62 +149,86 @@
   .choice.correct { background: rgba(76,153,90,0.18); border-color: var(--green); color: #bfe6c4; }
   .choice.incorrect { background: rgba(163,55,44,0.18); border-color: var(--stamp-red); color: #f0b8b0; }
 
-  .type-row { display: flex; gap: 8px; margin-top: 4px; width: 100%; }
+  .type-wrap { position: relative; width: 100%; margin-top: 4px; }
+  .type-row { display: flex; gap: 0.5rem; width: 100%; }
+  .type-suggestions {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: var(--navy); border: 1px solid var(--gold); border-radius: 0.5rem;
+    max-height: 220px; overflow-y: auto;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+  }
+  .type-suggestion {
+    display: block; width: 100%; text-align: inherit; background: none; border: none;
+    color: var(--parchment); font-family: inherit; font-size: 0.875rem; padding: 0.75rem 14px;
+    cursor: pointer; border-bottom: 1px solid rgba(201,162,75,0.15); min-height: 2.75rem;
+  }
+  .type-suggestion:last-child { border-bottom: none; }
+  .type-suggestion:hover, .type-suggestion:active { background: rgba(201,162,75,0.15); }
+  .type-suggestion b { color: var(--gold-bright); }
   .type-input {
     flex: 1; background: rgba(244,236,216,0.05); border: 1px solid var(--line); color: var(--parchment);
-    padding: 12px 14px; border-radius: 8px; font-size: 16px; font-family: inherit; min-height: 46px;
+    padding: 0.75rem 14px; border-radius: 0.5rem; font-size: 1rem; font-family: inherit; min-height: 2.875rem;
   }
   .type-input:focus { outline: none; border-color: var(--gold); }
   .type-submit {
     background: var(--gold); color: var(--navy-deep); border: none; padding: 0 18px;
-    border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px;
-    min-height: 46px; min-width: 64px;
+    border-radius: 0.5rem; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8125rem;
+    min-height: 2.875rem; min-width: 64px;
   }
   .type-submit:hover { background: var(--gold-bright); }
   .type-submit:disabled { opacity: 0.5; cursor: default; }
 
-  .foot-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 16px; }
+  .foot-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
   .next-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 12px 24px; border-radius: 7px;
-    font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
+    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 24px; border-radius: 0.4375rem;
+    font-weight: 700; font-size: 0.875rem; cursor: pointer; font-family: inherit;
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
-    min-height: 46px;
+    min-height: 2.875rem;
   }
   .next-btn.ready { opacity: 1; pointer-events: auto; }
   .next-btn:hover { background: var(--gold-bright); }
 
-  .end-screen { text-align: center; padding: 6px 2px; }
-  .end-icon { font-size: 38px; margin-bottom: 4px; }
-  .end-screen .big-score { font-size: 40px; font-weight: 800; color: var(--gold-bright); font-family: 'Georgia', serif; margin: 6px 0 2px; }
-  .end-screen .of-label { font-size: 12px; color: rgba(244,236,216,0.5); margin-bottom: 14px; }
-  .end-screen p.msg { color: rgba(244,236,216,0.75); font-size: 14px; margin: 0 0 16px; }
+  .hint-btn {
+    background: none; border: 1px solid var(--gold); color: var(--gold-bright);
+    padding: 0.75rem 1.1rem; border-radius: 0.4375rem;
+    font-weight: 700; font-size: 0.8125rem; cursor: pointer; font-family: inherit;
+    min-height: 2.875rem;
+  }
+  .hint-btn:hover { background: rgba(201,162,75,0.12); }
+  .hint-btn:disabled { opacity: 0.35; cursor: default; }
+
+  .end-screen { text-align: center; padding: 0.375rem 2px; }
+  .end-icon { font-size: 2.375rem; margin-bottom: 4px; }
+  .end-screen .big-score { font-size: 2.5rem; font-weight: 800; color: var(--gold-bright); font-family: 'Georgia', serif; margin: 6px 0 2px; }
+  .end-screen .of-label { font-size: 0.75rem; color: rgba(244,236,216,0.5); margin-bottom: 14px; }
+  .end-screen p.msg { color: rgba(244,236,216,0.75); font-size: 0.875rem; margin: 0 0 16px; }
 
   .progress-list, .missed-list { text-align: right; border-top: 1px dashed var(--line); padding-top: 14px; margin-bottom: 18px; }
   html[dir="ltr"] .progress-list, html[dir="ltr"] .missed-list { text-align: left; }
   .progress-list .pl-title, .missed-list .pl-title {
-    font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold);
+    font-size: 0.6875rem; letter-spacing: 0.125rem; text-transform: uppercase; color: var(--gold);
     margin-bottom: 10px; text-align: center;
   }
   .missed-list .pl-title { color: var(--stamp-red); }
   .pl-row { margin-bottom: 9px; }
-  .pl-row .pl-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .pl-row .pl-top { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; }
   .pl-row .pl-top span:first-child { color: rgba(244,236,216,0.8); }
   .pl-row .pl-top b { color: var(--gold-bright); }
   .pl-row.total .pl-top span:first-child { font-weight: 700; color: var(--parchment); }
   .pl-row.total { margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--line); }
 
-  .missed-chips, .history-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .missed-chips, .history-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
   .missed-chip {
-    display: flex; align-items: center; gap: 6px; background: rgba(163,55,44,0.12);
-    border: 1px solid rgba(163,55,44,0.4); border-radius: 20px; padding: 4px 12px 4px 4px; font-size: 12px;
+    display: flex; align-items: center; gap: 0.375rem; background: rgba(163,55,44,0.12);
+    border: 1px solid rgba(163,55,44,0.4); border-radius: 1.25rem; padding: 0.25rem 12px 4px 4px; font-size: 0.75rem;
   }
-  html[dir="ltr"] .missed-chip { padding: 4px 4px 4px 12px; }
-  .missed-chip img { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; }
+  html[dir="ltr"] .missed-chip { padding: 0.25rem 4px 4px 12px; }
+  .missed-chip img { width: 22px; height: 15px; object-fit: cover; border-radius: 0.1875rem; }
 
-  .end-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .end-buttons { display: flex; gap: 0.625rem; justify-content: center; flex-wrap: wrap; }
   .restart-btn, .menu-btn {
-    padding: 12px 18px; border-radius: 7px; font-weight: 700; cursor: pointer; font-family: inherit;
-    font-size: 13px; border: 1px solid var(--gold); min-height: 44px;
+    padding: 0.75rem 18px; border-radius: 0.4375rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    font-size: 0.8125rem; border: 1px solid var(--gold); min-height: 2.75rem;
   }
   .restart-btn { background: var(--gold); color: var(--navy-deep); border: none; }
   .restart-btn:hover { background: var(--gold-bright); }
@@ -202,16 +236,16 @@
   .menu-btn:hover { background: rgba(201,162,75,0.1); }
 
   .map-target-name {
-    font-size: 20px; font-weight: 800; color: var(--gold-bright);
+    font-size: 1.25rem; font-weight: 800; color: var(--gold-bright);
     text-align: center; line-height: 1.3; padding: 0 4px;
   }
-  .study-capital { font-size: 15px; color: rgba(244,236,216,0.8); }
+  .study-capital { font-size: 0.9375rem; color: rgba(244,236,216,0.8); }
   .study-capital b { color: var(--gold-bright); }
 
   .map-wrap {
     width: 100%;
     height: min(58vh, 340px);
-    border-radius: 8px; overflow: hidden;
+    border-radius: 0.5rem; overflow: hidden;
     background: #0d1c30; border: 1px solid var(--line); touch-action: none;
     position: relative;
   }
@@ -230,46 +264,57 @@
 
   .map-controls {
     position: absolute; bottom: 10px; left: 10px;
-    display: flex; flex-direction: column; gap: 6px; z-index: 5;
+    display: flex; flex-direction: column; gap: 0.375rem; z-index: 5;
   }
   html[dir="rtl"] .map-controls { left: auto; right: 10px; }
   .map-ctrl-btn {
-    width: 40px; height: 40px; border-radius: 8px;
+    width: 40px; height: 40px; border-radius: 0.5rem;
     background: rgba(10,22,38,0.85); border: 1px solid var(--line); color: var(--parchment);
-    font-size: 19px; font-weight: 700; line-height: 1; cursor: pointer;
+    font-size: 1.1875rem; font-weight: 700; line-height: 1; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
   .map-ctrl-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
   .map-ctrl-btn:active { transform: scale(0.95); }
-  .map-ctrl-reset { font-size: 16px; }
+  .map-ctrl-reset { font-size: 1rem; }
 
   .study-controls {
-    display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 8px;
+    display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 0.5rem;
   }
   .study-nav-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 12px 16px; border-radius: 7px;
-    font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; min-height: 46px;
+    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 16px; border-radius: 0.4375rem;
+    font-weight: 700; font-size: 0.8125rem; cursor: pointer; font-family: inherit; min-height: 2.875rem;
   }
   .study-nav-btn:hover { background: var(--gold-bright); }
-  .study-position { font-size: 12px; color: rgba(244,236,216,0.6); white-space: nowrap; }
+  .study-position { font-size: 0.75rem; color: rgba(244,236,216,0.6); white-space: nowrap; }
 
-  .history-empty { text-align: center; color: rgba(244,236,216,0.5); font-size: 13px; padding: 30px 10px; }
+  .history-empty { text-align: center; color: rgba(244,236,216,0.5); font-size: 0.8125rem; padding: 1.875rem 10px; }
   .history-row {
-    border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px;
+    border: 1px solid var(--line); border-radius: 0.625rem; padding: 0.75rem; margin-bottom: 10px;
     background: rgba(244,236,216,0.03);
   }
-  .history-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 13px; }
+  .history-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8125rem; }
   .history-row-top .hr-title { font-weight: 700; color: var(--parchment); }
   .history-row-top .hr-result { color: var(--gold-bright); font-weight: 700; }
-  .history-row-meta { font-size: 11px; color: rgba(244,236,216,0.5); margin-bottom: 6px; }
-  .history-note { font-size: 11px; color: rgba(244,236,216,0.45); text-align: center; margin-top: 6px; }
+  .history-row-meta { font-size: 0.6875rem; color: rgba(244,236,216,0.5); margin-bottom: 6px; }
+  .history-note { font-size: 0.6875rem; color: rgba(244,236,216,0.45); text-align: center; margin-top: 6px; }
 
   .hidden { display: none !important; }
 
   /* Small phones: tighten outer spacing so nothing forces the page itself to be pinch-zoomed */
-  @media (max-width: 420px) {
-    body { padding: 8px; }
-    .passport { padding: 16px 12px 14px; border-radius: 10px; }
+  /* Phones: fill the whole viewport edge-to-edge instead of floating a
+     card with visible margins — nothing to zoom or pan to reach. */
+  @media (max-width: 640px) {
+    html, body { height: 100%; }
+    body {
+      padding: 0; align-items: stretch; justify-content: stretch;
+      display: block;
+    }
+    .passport {
+      max-width: 100%; width: 100%; min-height: 100vh; min-height: 100dvh;
+      border-radius: 0; box-shadow: none;
+      padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+               max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
     .flag-frame { width: 150px; height: 100px; }
     .map-wrap { height: min(50vh, 300px); }
   }
@@ -338,12 +383,16 @@
     <div class="prompt" id="promptLabel" style="text-align:center;margin-top:6px;"></div>
 
     <div class="choices hidden" id="choices"></div>
-    <div class="type-row hidden" id="typeRow">
-      <input type="text" class="type-input" id="typeInput" autocomplete="off">
-      <button class="type-submit" id="typeSubmit">تأكيد</button>
+    <div class="type-wrap hidden" id="typeWrap">
+      <div class="type-row" id="typeRow">
+        <input type="text" class="type-input" id="typeInput" autocomplete="off">
+        <button class="type-submit" id="typeSubmit">تأكيد</button>
+      </div>
+      <div class="type-suggestions hidden" id="typeSuggestions"></div>
     </div>
 
     <div class="foot-row" id="footRow">
+      <button class="hint-btn hidden" id="hintBtn">💡 تلميح</button>
       <button class="next-btn" id="nextBtn">التالي ←</button>
     </div>
 
@@ -628,7 +677,7 @@ const CONFUSABLE_GROUPS = [
   ["lt","bo"],                      // horizontal yellow-green-red vs red-yellow-green (Lithuania, Bolivia)
   ["dz","pk"],                      // green field, white crescent and star
   ["th","cr"],                      // horizontal bands with a thick middle stripe (Thailand, Costa Rica)
-  ["lr","us"],                      // stripes + star(s) on a blue canton (Liberia, United States)
+  ["lr","us","my"],                 // stripes + star(s) on a canton (Liberia, United States, Malaysia)
 ];
 
 
@@ -640,12 +689,20 @@ CONFUSABLE_GROUPS.forEach(group => {
   });
 });
 
-// Builds the wrong-answer pool for a multiple-choice question: confusable
-// countries first, then a random fallback from the rest of the pool.
+// Builds the wrong-answer pool for a multiple-choice question, hardest
+// first: visually-confusable flags, then geographically nearby
+// countries, then a random fallback from the rest of the pool.
 function getWrongOptions(correct, fallbackPool, count) {
   const confSet = confusableMap[correct.code] ? [...confusableMap[correct.code]] : [];
   let confCountries = shuffle(confSet.map(code => countries.find(c => c.code === code)).filter(Boolean));
   let candidates = confCountries.slice(0, count);
+
+  if (candidates.length < count) {
+    const usedCodes = new Set([correct.code, ...candidates.map(c => c.code)]);
+    const needed = count - candidates.length;
+    const neighbors = getNearestCountries(correct.code, 10).filter(c => !usedCodes.has(c.code));
+    candidates = candidates.concat(shuffle(neighbors).slice(0, needed));
+  }
 
   if (candidates.length < count) {
     const usedCodes = new Set([correct.code, ...candidates.map(c => c.code)]);
@@ -660,6 +717,115 @@ function getWrongOptions(correct, fallbackPool, count) {
 /* ---------------------------------------------------------------------
    Continents: used to group countries and to zoom the map
    --------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------
+   A few well-known non-capital cities per country, used only as extra
+   multiple-choice distractors in capital-quiz mode. Most people know
+   at least one city in a handful of countries, so mixing a country's
+   own cities into the options makes "guess the capital" genuinely
+   harder than picking a capital-sounding name out of a random list.
+   Not exhaustive — only populated for larger/more widely-known
+   countries; everywhere else just falls back to the normal
+   confusable-flag/neighbor/random logic.
+   --------------------------------------------------------------------- */
+const MAJOR_CITIES = {
+  eg: { ar: ["الإسكندرية","الجيزة","الأقصر","أسوان"], en: ["Alexandria","Giza","Luxor","Aswan"] },
+  ma: { ar: ["الدار البيضاء","مراكش","فاس","طنجة"], en: ["Casablanca","Marrakesh","Fez","Tangier"] },
+  dz: { ar: ["وهران","قسنطينة","عنابة"], en: ["Oran","Constantine","Annaba"] },
+  tn: { ar: ["صفاقس","سوسة","بنزرت"], en: ["Sfax","Sousse","Bizerte"] },
+  ly: { ar: ["بنغازي","مصراتة"], en: ["Benghazi","Misrata"] },
+  sd: { ar: ["أم درمان","بورسودان"], en: ["Omdurman","Port Sudan"] },
+  ng: { ar: ["لاغوس","كانو","إيبادان"], en: ["Lagos","Kano","Ibadan"] },
+  za: { ar: ["جوهانسبرغ","كيب تاون","ديربان"], en: ["Johannesburg","Cape Town","Durban"] },
+  ke: { ar: ["مومباسا","كيسومو"], en: ["Mombasa","Kisumu"] },
+  gh: { ar: ["كوماسي","تامالي"], en: ["Kumasi","Tamale"] },
+  tz: { ar: ["دار السلام","زنجبار"], en: ["Dar es Salaam","Zanzibar City"] },
+
+  sa: { ar: ["جدة","مكة المكرمة","المدينة المنورة","الدمام"], en: ["Jeddah","Mecca","Medina","Dammam"] },
+  ae: { ar: ["دبي","الشارقة","العين"], en: ["Dubai","Sharjah","Al Ain"] },
+  iq: { ar: ["البصرة","الموصل","أربيل"], en: ["Basra","Mosul","Erbil"] },
+  sy: { ar: ["حلب","حمص","اللاذقية"], en: ["Aleppo","Homs","Latakia"] },
+  jo: { ar: ["الزرقاء","إربد","العقبة"], en: ["Zarqa","Irbid","Aqaba"] },
+  lb: { ar: ["طرابلس","صيدا","صور"], en: ["Tripoli","Sidon","Tyre"] },
+  ye: { ar: ["عدن","تعز"], en: ["Aden","Taiz"] },
+  om: { ar: ["صلالة","صحار"], en: ["Salalah","Sohar"] },
+  pk: { ar: ["كراتشي","لاهور","فيصل آباد"], en: ["Karachi","Lahore","Faisalabad"] },
+  in: { ar: ["مومباي","بنغالور","كولكاتا","تشيناي"], en: ["Mumbai","Bangalore","Kolkata","Chennai"] },
+  cn: { ar: ["شنغهاي","قوانغتشو","شنتشن"], en: ["Shanghai","Guangzhou","Shenzhen"] },
+  jp: { ar: ["أوساكا","يوكوهاما","ناغويا"], en: ["Osaka","Yokohama","Nagoya"] },
+  kr: { ar: ["بوسان","إنتشون"], en: ["Busan","Incheon"] },
+  id: { ar: ["سورابايا","باندونغ","ميدان"], en: ["Surabaya","Bandung","Medan"] },
+  th: { ar: ["تشيانغ ماي","باتايا"], en: ["Chiang Mai","Pattaya"] },
+  vn: { ar: ["مدينة هو تشي منه","دا نانغ"], en: ["Ho Chi Minh City","Da Nang"] },
+  ph: { ar: ["كويزون سيتي","سيبو","دافاو"], en: ["Quezon City","Cebu City","Davao"] },
+  my: { ar: ["جوهور بهرو","جورج تاون","إيبوه"], en: ["Johor Bahru","George Town","Ipoh"] },
+  tr: { ar: ["إسطنبول","إزمير","بورصة"], en: ["Istanbul","Izmir","Bursa"] },
+  ir: { ar: ["مشهد","أصفهان","شيراز"], en: ["Mashhad","Isfahan","Shiraz"] },
+
+  ru: { ar: ["سان بطرسبرغ","نوفوسيبيرسك","قازان"], en: ["Saint Petersburg","Novosibirsk","Kazan"] },
+  de: { ar: ["ميونخ","هامبورغ","فرانكفورت","كولونيا"], en: ["Munich","Hamburg","Frankfurt","Cologne"] },
+  fr: { ar: ["مارسيليا","ليون","نيس","تولوز"], en: ["Marseille","Lyon","Nice","Toulouse"] },
+  it: { ar: ["ميلانو","نابولي","تورين"], en: ["Milan","Naples","Turin"] },
+  es: { ar: ["برشلونة","فالنسيا","إشبيلية"], en: ["Barcelona","Valencia","Seville"] },
+  gb: { ar: ["مانشستر","برمنغهام","ليفربول","غلاسكو"], en: ["Manchester","Birmingham","Liverpool","Glasgow"] },
+  nl: { ar: ["روتردام","لاهاي","أوترخت"], en: ["Rotterdam","The Hague","Utrecht"] },
+  pl: { ar: ["كراكوف","غدانسك","فروتسواف"], en: ["Krakow","Gdansk","Wroclaw"] },
+  ua: { ar: ["خاركيف","أوديسا","لفيف"], en: ["Kharkiv","Odesa","Lviv"] },
+  gr: { ar: ["سالونيك","باتراس"], en: ["Thessaloniki","Patras"] },
+  pt: { ar: ["بورتو","براغا"], en: ["Porto","Braga"] },
+  se: { ar: ["غوتنبرغ","مالمو"], en: ["Gothenburg","Malmö"] },
+  ch: { ar: ["زيورخ","جنيف","بازل"], en: ["Zurich","Geneva","Basel"] },
+  at: { ar: ["غراتس","سالزبورغ"], en: ["Graz","Salzburg"] },
+  be: { ar: ["أنتويرب","غنت"], en: ["Antwerp","Ghent"] },
+  ro: { ar: ["كلوج نابوكا","تيميشوارا"], en: ["Cluj-Napoca","Timisoara"] },
+  cz: { ar: ["برنو"], en: ["Brno"] },
+  dk: { ar: ["آرهوس"], en: ["Aarhus"] },
+  no: { ar: ["بيرغن","تروندهايم"], en: ["Bergen","Trondheim"] },
+  fi: { ar: ["تامبيري","توركو"], en: ["Tampere","Turku"] },
+
+  us: { ar: ["نيويورك","لوس أنجلوس","شيكاغو","هيوستن"], en: ["New York","Los Angeles","Chicago","Houston"] },
+  ca: { ar: ["تورونتو","فانكوفر","مونتريال"], en: ["Toronto","Vancouver","Montreal"] },
+  mx: { ar: ["غوادالاخارا","مونتيري","بويبلا"], en: ["Guadalajara","Monterrey","Puebla"] },
+  br: { ar: ["ساو باولو","ريو دي جانيرو","سلفادور"], en: ["São Paulo","Rio de Janeiro","Salvador"] },
+  ar: { ar: ["قرطبة","روساريو","مندوزا"], en: ["Córdoba","Rosario","Mendoza"] },
+  co: { ar: ["ميديين","كالي","بارانكويا"], en: ["Medellín","Cali","Barranquilla"] },
+  cl: { ar: ["فالبارايسو","كونسبسيون"], en: ["Valparaíso","Concepción"] },
+  pe: { ar: ["أريكيبا","كوسكو","تروخيو"], en: ["Arequipa","Cusco","Trujillo"] },
+  ve: { ar: ["ماراكايبو","فالنسيا"], en: ["Maracaibo","Valencia"] },
+  cu: { ar: ["سانتياغو دي كوبا"], en: ["Santiago de Cuba"] },
+  do: { ar: ["سانتياغو"], en: ["Santiago"] },
+
+  au: { ar: ["سيدني","ملبورن","بريزبن","بيرث"], en: ["Sydney","Melbourne","Brisbane","Perth"] },
+  nz: { ar: ["أوكلاند","كرايستشيرش"], en: ["Auckland","Christchurch"] },
+};
+
+// Builds the shuffled multiple-choice labels for a capital-quiz round:
+// prefer the country's OWN other cities as distractors (hardest, since
+// they're all genuinely plausible), then top up with other countries'
+// capitals via the normal confusable-flag/neighbor/random tiers.
+function buildCapitalChoices(correctCountry, fallbackPool, count) {
+  const correctLabel = capOf(correctCountry);
+  const wrongLabels = [];
+
+  const cityData = MAJOR_CITIES[correctCountry.code];
+  if (cityData) {
+    const cityList = LANG === "ar" ? cityData.ar : cityData.en;
+    shuffle(cityList).forEach(city => {
+      if (wrongLabels.length < count && city !== correctLabel) wrongLabels.push(city);
+    });
+  }
+
+  if (wrongLabels.length < count) {
+    const otherCountries = getWrongOptions(correctCountry, fallbackPool, count - wrongLabels.length + 2);
+    otherCountries.forEach(c => {
+      if (wrongLabels.length >= count) return;
+      const label = capOf(c);
+      if (label !== correctLabel && !wrongLabels.includes(label)) wrongLabels.push(label);
+    });
+  }
+
+  return shuffle([correctLabel, ...wrongLabels.slice(0, count)]);
+}
+
 const CONTINENTS = [
   { key: "africa",   emoji: "🌍", ar: "أفريقيا",             en: "Africa" },
   { key: "asia",     emoji: "🌏", ar: "آسيا",                 en: "Asia" },
@@ -906,6 +1072,37 @@ function continentViewBox(key) {
 }
 
 /* ---------------------------------------------------------------------
+   Rough country centroids (bounding-box center for polygons, exact
+   point for marker-only island states) — good enough to rank
+   countries by "how close is this to country X", used to make wrong
+   multiple-choice answers geographically relevant instead of random.
+   --------------------------------------------------------------------- */
+const countryCenters = {};
+countries.forEach(c => {
+  if (mapDataByCode[c.code]) {
+    const bb = featureBBox(mapDataByCode[c.code]);
+    countryCenters[c.code] = [(bb.minX + bb.maxX) / 2, -(bb.minY + bb.maxY) / 2]; // un-flip lat back to normal
+  } else if (MARKER_POINTS[c.code]) {
+    countryCenters[c.code] = MARKER_POINTS[c.code];
+  }
+});
+
+function getNearestCountries(code, k) {
+  const p0 = countryCenters[code];
+  if (!p0) return [];
+  return countries
+    .filter(c => c.code !== code && countryCenters[c.code])
+    .map(c => {
+      const p = countryCenters[c.code];
+      const dx = p[0] - p0[0], dy = p[1] - p0[1];
+      return { c, d2: dx * dx + dy * dy };
+    })
+    .sort((a, b) => a.d2 - b.d2)
+    .slice(0, k)
+    .map(x => x.c);
+}
+
+/* ---------------------------------------------------------------------
    Language helpers
    --------------------------------------------------------------------- */
 let LANG = "ar";
@@ -925,21 +1122,39 @@ function shuffle(arr) {
 }
 
 // Loosely normalizes typed answers so minor spelling/diacritic
-// differences still count as correct (e.g. "الجزائر" vs "جزائر").
+// differences still count as correct (e.g. "الجزائر" vs "جزائر",
+// "ايران" vs "أيران", "Sao Tome" vs "São Tomé").
 function normalize(str) {
   str = (str || "").trim().toLowerCase();
   if (LANG === "ar") {
     str = str.replace(/[\u064B-\u0652]/g, "");   // strip diacritics
-    str = str.replace(/[إأآا]/g, "ا");
+    str = str.replace(/[إأآا]/g, "ا");            // unify all alef/hamza forms
     str = str.replace(/ى/g, "ي");
     str = str.replace(/ة/g, "ه");
     str = str.replace(/^ال/, "");                 // drop leading "ال" article
     str = str.replace(/[^ء-ي0-9 ]/g, "");
   } else {
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // strip accents (é→e, ã→a, ü→u...)
     str = str.replace(/^the /, "");
     str = str.replace(/[^a-z0-9 ]/g, "");
   }
   return str.replace(/\s+/g, " ").trim();
+}
+
+// A lighter version used only for the live suggestion list while
+// typing: same accent/hamza unification, but keeps the leading "ال"
+// article so typing "ال" still narrows to countries starting with it.
+function lightNormalize(str) {
+  str = (str || "").trim().toLowerCase();
+  if (LANG === "ar") {
+    str = str.replace(/[\u064B-\u0652]/g, "");
+    str = str.replace(/[إأآا]/g, "ا");
+    str = str.replace(/ى/g, "ي");
+    str = str.replace(/ة/g, "ه");
+  } else {
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  return str;
 }
 
 /* ---------------------------------------------------------------------
@@ -1005,6 +1220,8 @@ const verdictBadge = document.getElementById('verdictBadge');
 const promptLabel = document.getElementById('promptLabel');
 const choicesEl = document.getElementById('choices');
 const typeRow = document.getElementById('typeRow');
+const typeWrap = document.getElementById('typeWrap');
+const typeSuggestions = document.getElementById('typeSuggestions');
 const typeInput = document.getElementById('typeInput');
 const typeSubmit = document.getElementById('typeSubmit');
 const footRow = document.getElementById('footRow');
@@ -1675,7 +1892,7 @@ function renderRound() {
     }
     countryLabel.classList.add('hidden');
     choicesEl.classList.add('hidden');
-    typeRow.classList.add('hidden');
+    typeWrap.classList.add('hidden');
     mapTargetName.classList.remove('hidden');
     mapTargetName.textContent = currentMode === 'map_capital'
       ? t().promptMapCapital(capOf(currentCorrect))
@@ -1696,23 +1913,25 @@ function renderRound() {
 
   const typeMode = isTypeMode();
   choicesEl.classList.toggle('hidden', typeMode);
-  typeRow.classList.toggle('hidden', !typeMode);
+  typeWrap.classList.toggle('hidden', !typeMode);
 
   if (!typeMode) {
-    const wrongPool = getWrongOptions(currentCorrect, pool, 3);
-    const options = shuffle([currentCorrect, ...wrongPool]);
+    const correctLabel = capMode ? capOf(currentCorrect) : nameOf(currentCorrect);
+    const labels = capMode
+      ? buildCapitalChoices(currentCorrect, pool, 3)
+      : shuffle([currentCorrect, ...getWrongOptions(currentCorrect, pool, 3)]).map(nameOf);
     choicesEl.innerHTML = '';
-    options.forEach(opt => {
-      const label = capMode ? capOf(opt) : nameOf(opt);
+    labels.forEach(label => {
       const btn = document.createElement('button');
       btn.className = 'choice';
       btn.textContent = label;
-      btn.addEventListener('click', () => selectChoice(opt, btn));
+      btn.addEventListener('click', () => selectChoice(label, correctLabel, btn));
       choicesEl.appendChild(btn);
     });
   } else {
     typeInput.placeholder = capMode ? t().typePlaceholderCapital : t().typePlaceholderCountry;
     typeInput.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+    hideSuggestions();
     setTimeout(() => typeInput.focus(), 50);
   }
 
@@ -1749,7 +1968,7 @@ function renderStudyRound() {
   if (!studyList.length) return;
   verdictBadge.classList.remove('show', 'correct', 'wrong');
   choicesEl.classList.add('hidden');
-  typeRow.classList.add('hidden');
+  typeWrap.classList.add('hidden');
 
   const c = studyList[studyIndex];
   currentCorrect = c;
@@ -1832,11 +2051,10 @@ function handleAnswerResult(isCorrect, correctLabel) {
   markResult(isCorrect, correctLabel);
 }
 
-function selectChoice(opt, btnEl) {
+function selectChoice(label, correctLabel, btnEl) {
   if (answered) return;
   answered = true;
-  const isCorrect = opt.code === currentCorrect.code;
-  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : nameOf(currentCorrect);
+  const isCorrect = label === correctLabel;
   [...choicesEl.children].forEach(btn => {
     btn.disabled = true;
     if (btn.textContent === correctLabel) btn.classList.add('correct');
@@ -1848,6 +2066,7 @@ function selectChoice(opt, btnEl) {
 function submitTyped() {
   if (answered) return;
   answered = true;
+  hideSuggestions();
   const correctLabel = isCapitalMode() ? capOf(currentCorrect) : nameOf(currentCorrect);
   const isCorrect = normalize(typeInput.value) === normalize(correctLabel) && normalize(typeInput.value).length > 0;
   typeInput.disabled = true;
@@ -1857,6 +2076,50 @@ function submitTyped() {
 
 typeSubmit.addEventListener('click', submitTyped);
 typeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitTyped(); });
+
+/* ---------------------------------------------------------------------
+   Live suggestions while typing — narrows down as the player types,
+   so e.g. typing "ال" already shows a short pick-list of countries
+   starting with it, instead of requiring the full word.
+   --------------------------------------------------------------------- */
+function hideSuggestions() {
+  typeSuggestions.classList.add('hidden');
+  typeSuggestions.innerHTML = '';
+}
+
+function renderSuggestions() {
+  const query = lightNormalize(typeInput.value);
+  if (!query) { hideSuggestions(); return; }
+
+  const capMode = isCapitalMode();
+  const labelOf = c => capMode ? capOf(c) : nameOf(c);
+
+  const matches = pool
+    .filter(c => lightNormalize(labelOf(c)).startsWith(query))
+    .slice(0, 6);
+
+  if (!matches.length) { hideSuggestions(); return; }
+
+  typeSuggestions.innerHTML = '';
+  matches.forEach(c => {
+    const label = labelOf(c);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'type-suggestion';
+    // Bold the part the player already typed, for a clear visual match.
+    const matchLen = query.length;
+    btn.innerHTML = `<b>${label.slice(0, matchLen)}</b>${label.slice(matchLen)}`;
+    btn.addEventListener('click', () => {
+      typeInput.value = label;
+      hideSuggestions();
+      submitTyped();
+    });
+    typeSuggestions.appendChild(btn);
+  });
+  typeSuggestions.classList.remove('hidden');
+}
+
+typeInput.addEventListener('input', renderSuggestions);
 
 nextBtn.addEventListener('click', () => {
   deckIndex++;
