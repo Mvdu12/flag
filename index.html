@@ -26,34 +26,47 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
-    margin: 0; padding: 0; min-height: 100vh; min-height: 100dvh;
+    margin: 0; padding: 0; height: 100%;
     overflow-x: hidden;
     background:
-      radial-gradient(circle at 20% 15%, rgba(201,162,75,0.08), transparent 45%),
-      radial-gradient(circle at 85% 80%, rgba(201,162,75,0.06), transparent 40%),
+      radial-gradient(circle at 20% 15%, rgba(201,162,75,0.10), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(201,162,75,0.07), transparent 40%),
       var(--navy-deep);
     font-family: 'Tahoma', 'Segoe UI', sans-serif;
     color: var(--parchment);
-    display: flex; align-items: stretch; justify-content: center;
-    padding: 1rem;
     touch-action: manipulation; /* avoid the double-tap-to-zoom delay on mobile browsers */
   }
+  body { display: block; }
   button { touch-action: manipulation; }
 
-  /* The panel always fills the full available height, at any screen
-     size — no floating "postage stamp" card with dead space above/below.
-     Width still caps at a readable column, but grows to fill on phones. */
+  /* The panel always fills the entire device screen edge-to-edge, at any
+     screen size — no floating card with dead space around it, so there
+     is never anything to pinch-zoom or pan just to reach a button. */
   .passport {
-    width: min(94vw, 1200px);
-    min-height: calc(100vh - 32px); min-height: calc(100dvh - 32px);
+    width: 100%; min-height: 100vh; min-height: 100dvh;
     display: flex; flex-direction: column; justify-content: center;
+    margin: 0 auto; max-width: 720px;
     background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
-    border: 1px solid var(--line); border-radius: 0.875rem;
-    box-shadow: 0 0 0 6px rgba(201,162,75,0.06), 0 30px 60px rgba(0,0,0,0.5);
-    padding: 1.375rem 18px 18px; position: relative; overflow: hidden;
+    border: none; border-radius: 0;
+    box-shadow: none;
+    padding: max(0.875rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
+              max(0.875rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+    position: relative; overflow: hidden;
+  }
+  /* On screens wide enough to comfortably show it as a panel rather
+     than a full device screen, bring back a subtle frame. */
+  @media (min-width: 760px) {
+    body { display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .passport {
+      min-height: min(92vh, 800px);
+      border: 1px solid var(--line); border-radius: 1rem;
+      box-shadow: 0 0 0 6px rgba(201,162,75,0.06), 0 30px 60px rgba(0,0,0,0.5);
+      padding: 1.375rem 1.375rem 1.25rem;
+    }
   }
   .passport::before {
-    content: ""; position: absolute; inset: 10px;
+    content: "";
+    position: absolute; inset: 0.625rem;
     border: 1px solid var(--line); border-radius: 0.5rem; pointer-events: none;
   }
   header { text-align: center; margin-bottom: 14px; position: relative; }
@@ -82,6 +95,14 @@
   .bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 0.25rem; transition: width 0.4s ease; }
 
   .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+  .section-divider {
+    text-align: center; font-size: 0.75rem; color: rgba(244,236,216,0.45);
+    margin: 1.25rem 0 0.75rem; letter-spacing: 0.03125rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
   .continent-card, .mode-card {
     background: rgba(244,236,216,0.04); border: 1px solid var(--line); border-radius: 0.625rem;
     padding: 0.875rem 12px; text-align: right; cursor: pointer; font-family: inherit; color: var(--parchment);
@@ -119,9 +140,18 @@
   .country-label { font-size: 1.125rem; font-weight: 700; color: var(--gold-bright); }
   .flag-frame {
     width: 180px; max-width: 60vw; height: 120px; border-radius: 0.375rem; overflow: hidden;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--line); background: rgba(0,0,0,0.15);
+    background: rgba(0,0,0,0.15);
+    border: 3px solid var(--gold);
+    box-shadow:
+      0 10px 24px rgba(0,0,0,0.5),
+      0 0 0 1px var(--navy-deep),
+      0 0 0 5px rgba(201,162,75,0.35),
+      inset 0 0 0 1px rgba(0,0,0,0.4);
   }
   .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; transition: none; }
+  /* Shown only when every flag provider failed to load (offline/blocked
+     network) — keep the placeholder text readable, not stretched/cropped. */
+  .flag-frame img.flag-fallback { object-fit: contain; }
   .prompt { font-size: 0.75rem; color: rgba(244,236,216,0.5); letter-spacing: 0.0625rem; }
 
   /* Result badge sits below the flag/map (never on top of it) so it's always visible */
@@ -138,8 +168,8 @@
 
   .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-top: 4px; width: 100%; }
   .choice {
-    background: rgba(244,236,216,0.04); border: 1px solid var(--line); color: var(--parchment);
-    padding: 0.8125rem 10px; border-radius: 0.5rem; font-size: 0.875rem; cursor: pointer; font-family: inherit;
+    background: rgba(244,236,216,0.05); border: 1px solid var(--line); color: var(--parchment);
+    padding: 0.8125rem 10px; border-radius: 999px; font-size: 0.875rem; cursor: pointer; font-family: inherit;
     transition: background 0.15s, border-color 0.15s, transform 0.1s; text-align: center;
     min-height: 2.875rem;
   }
@@ -303,18 +333,7 @@
   /* Small phones: tighten outer spacing so nothing forces the page itself to be pinch-zoomed */
   /* Phones: fill the whole viewport edge-to-edge instead of floating a
      card with visible margins — nothing to zoom or pan to reach. */
-  @media (max-width: 640px) {
-    html, body { height: 100%; }
-    body {
-      padding: 0; align-items: stretch; justify-content: stretch;
-      display: block;
-    }
-    .passport {
-      max-width: 100%; width: 100%; min-height: 100vh; min-height: 100dvh;
-      border-radius: 0; box-shadow: none;
-      padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-               max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    }
+  @media (max-width: 420px) {
     .flag-frame { width: 150px; height: 100px; }
     .map-wrap { height: min(50vh, 300px); }
   }
@@ -362,6 +381,8 @@
       <div class="bar-track"><div class="bar-fill" id="worldBar" style="width:0%"></div></div>
     </div>
     <div class="continent-grid" id="continentGrid"></div>
+    <div class="section-divider" id="blocDivider">أو اختار تصنيف تاني</div>
+    <div class="continent-grid" id="blocGrid"></div>
   </div>
 
   <!-- Screen 5: the actual game -->
@@ -689,26 +710,58 @@ CONFUSABLE_GROUPS.forEach(group => {
   });
 });
 
-// Builds the wrong-answer pool for a multiple-choice question, hardest
-// first: visually-confusable flags, then geographically nearby
-// countries, then a random fallback from the rest of the pool.
+// Builds the wrong-answer pool for a multiple-choice question. For a
+// themed bloc quiz (Arab League, Spanish-speaking, G7...) it stays
+// "in-category" first: other bloc members, then countries people commonly
+// (mis)assume belong to that bloc (Turkey/Iran for "Arab", Brazil for
+// "Spanish-speaking"...) — those are the hardest, most realistic wrong
+// answers for this kind of quiz. "Republics" is excluded since it's not
+// really a themed category (it's just "every non-monarchy", ~80% of all
+// countries), so it falls through to the normal tiers below instead.
+// Everything else (a continent, or no bloc at all) skips straight to:
+// visually-confusable flags, then geographically nearby countries, then
+// a random fallback from the rest of the pool.
 function getWrongOptions(correct, fallbackPool, count) {
-  const confSet = confusableMap[correct.code] ? [...confusableMap[correct.code]] : [];
-  let confCountries = shuffle(confSet.map(code => countries.find(c => c.code === code)).filter(Boolean));
-  let candidates = confCountries.slice(0, count);
+  let candidates = [];
+  const usedCodes = () => new Set([correct.code, ...candidates.map(c => c.code)]);
+
+  if (isBlocKey(currentContinentKey) && currentContinentKey !== 'bloc_republic') {
+    const blocMates = shuffle(regionCountries(currentContinentKey).filter(c => c.code !== correct.code));
+    candidates = candidates.concat(blocMates.slice(0, count));
+
+    if (candidates.length < count && BLOC_COMMON_MISCONCEPTIONS[currentContinentKey]) {
+      const used = usedCodes();
+      const misconceived = shuffle(
+        BLOC_COMMON_MISCONCEPTIONS[currentContinentKey]
+          .map(code => countries.find(c => c.code === code))
+          .filter(c => c && !used.has(c.code))
+      );
+      candidates = candidates.concat(misconceived.slice(0, count - candidates.length));
+    }
+  }
 
   if (candidates.length < count) {
-    const usedCodes = new Set([correct.code, ...candidates.map(c => c.code)]);
+    const used = usedCodes();
+    const confSet = confusableMap[correct.code] ? [...confusableMap[correct.code]] : [];
+    const confCountries = shuffle(confSet.map(code => countries.find(c => c.code === code)).filter(c => c && !used.has(c.code)));
+    candidates = candidates.concat(confCountries.slice(0, count - candidates.length));
+  }
+
+  if (candidates.length < count) {
+    const used = usedCodes();
     const needed = count - candidates.length;
-    const neighbors = getNearestCountries(correct.code, 10).filter(c => !usedCodes.has(c.code));
+    // A tight window scaled to what's actually needed, instead of a fixed
+    // top-10 pool — that let far-off "neighbors" (position 8, 9, 10) show
+    // up just as often as the genuinely closest, hardest-to-tell-apart ones.
+    const neighbors = getNearestCountries(correct.code, needed + 4).filter(c => !used.has(c.code));
     candidates = candidates.concat(shuffle(neighbors).slice(0, needed));
   }
 
   if (candidates.length < count) {
-    const usedCodes = new Set([correct.code, ...candidates.map(c => c.code)]);
+    const used = usedCodes();
     const needed = count - candidates.length;
     const source = fallbackPool.length >= count + 1 ? fallbackPool : countries;
-    const extra = shuffle(source.filter(c => !usedCodes.has(c.code))).slice(0, needed);
+    const extra = shuffle(source.filter(c => !used.has(c.code))).slice(0, needed);
     candidates = candidates.concat(extra);
   }
   return candidates;
@@ -834,6 +887,65 @@ const CONTINENTS = [
   { key: "samerica", emoji: "🌎", ar: "أمريكا الجنوبية",      en: "South America" },
   { key: "oceania",  emoji: "🌏", ar: "أوقيانوسيا",           en: "Oceania" },
 ];
+
+/* ---------------------------------------------------------------------
+   Extra quiz groupings beyond continents — political/economic blocs,
+   language families, government type, and a couple of well-established
+   historical groupings. Each "bloc" key is prefixed with "bloc_" so it
+   can be told apart from a continent key wherever a region is picked.
+   --------------------------------------------------------------------- */
+const MONARCHY_CODES = [
+  // Sovereign monarchies
+  "gb","es","nl","be","se","no","dk","lu","li","mc","ad","va",
+  "sa","jo","ma","ae","kw","qa","bh","om",
+  "jp","th","kh","bt","bn","my",
+  "sz","ls","to",
+  // Commonwealth realms (constitutional monarchies sharing the British monarch as head of state)
+  "ca","au","nz","jm","bs","bz","gd","pg","sb","tv","kn","lc","vc","ag",
+];
+
+const BLOCS = [
+  { key: "bloc_eu",     emoji: "🇪🇺", ar: "الاتحاد الأوروبي",         en: "European Union",
+    codes: ["at","be","bg","hr","cy","cz","dk","ee","fi","fr","de","gr","hu","ie","it","lv","lt","lu","mt","nl","pl","pt","ro","sk","si","es","se"] },
+  { key: "bloc_arab",   emoji: "🕌", ar: "جامعة الدول العربية",       en: "Arab League",
+    codes: ["dz","bh","km","dj","eg","iq","jo","kw","lb","ly","mr","ma","om","ps","qa","sa","so","sd","sy","tn","ae","ye"] },
+  { key: "bloc_g7",     emoji: "💼", ar: "مجموعة السبع G7",           en: "G7",
+    codes: ["us","gb","fr","de","it","ca","jp"] },
+  { key: "bloc_brics",  emoji: "🌐", ar: "بريكس BRICS",               en: "BRICS",
+    codes: ["br","ru","in","cn","za"] },
+  { key: "bloc_asean",  emoji: "🌏", ar: "آسيان ASEAN",               en: "ASEAN",
+    codes: ["id","my","ph","sg","th","bn","vn","la","mm","kh"] },
+  { key: "bloc_nato",   emoji: "🛡️", ar: "الناتو NATO",               en: "NATO",
+    codes: ["us","ca","gb","fr","de","it","be","nl","lu","dk","no","is","pt","es","gr","tr","pl","cz","hu","sk","si","ee","lv","lt","bg","ro","al","hr","mk","me","fi","se"] },
+  { key: "bloc_english", emoji: "🗣️", ar: "دول ناطقة بالإنجليزية",    en: "English-speaking countries",
+    codes: ["gb","us","ca","au","nz","ie","jm","bs","bz","gy","tt","bb","dm","gd","kn","lc","vc","ag",
+            "ng","gh","ke","ug","zm","zw","mw","sl","lr","gm","bw","na","ss","sc","za",
+            "in","pk","ph","sg","pg","fj","sb","vu","ws"] },
+  { key: "bloc_spanish", emoji: "🗣️", ar: "دول ناطقة بالإسبانية",     en: "Spanish-speaking countries",
+    codes: ["es","mx","gt","hn","sv","ni","cr","pa","cu","do","co","ve","ec","pe","bo","py","uy","ar","cl","gq"] },
+  { key: "bloc_ww2_axis", emoji: "⚔️", ar: "المحور – الحرب العالمية الثانية", en: "WWII: Axis Powers",
+    codes: ["de","it","jp"] },
+  { key: "bloc_ww2_allies", emoji: "🎖️", ar: "الحلفاء الكبار – الحرب العالمية الثانية", en: "WWII: Major Allied Powers",
+    codes: ["us","gb","ru","fr","cn"] },
+  { key: "bloc_monarchy", emoji: "👑", ar: "الدول الملكية",           en: "Monarchies",
+    codes: MONARCHY_CODES },
+  { key: "bloc_republic", emoji: "🏛️", ar: "الدول الجمهورية",        en: "Republics",
+    codes: countries.filter(c => !MONARCHY_CODES.includes(c.code)).map(c => c.code) },
+];
+function isBlocKey(key) { return typeof key === "string" && key.startsWith("bloc_"); }
+function findBloc(key) { return BLOCS.find(b => b.key === key); }
+
+// Countries that are NOT members of a given bloc but that people commonly
+// assume are — used as extra, especially-plausible wrong-answer choices
+// when quizzing that bloc specifically (e.g. Turkey/Iran aren't in the
+// Arab League, but many people think of them as "Arab" countries; Brazil
+// is Portuguese-speaking, not Spanish-speaking, despite being in Latin
+// America). Only defined for blocs where this kind of mix-up is common.
+const BLOC_COMMON_MISCONCEPTIONS = {
+  bloc_arab:    ["tr", "ir", "af", "pk"],
+  bloc_spanish: ["br", "bz", "ht", "pt"],
+};
+
 /* ---------------------------------------------------------------------
    UI strings, Arabic and English. Every user-facing label lives here so
    the language toggle can re-render any screen instantly.
@@ -841,10 +953,11 @@ const CONTINENTS = [
 const STR = {
   ar: {
     eyebrow: "جواز السفر العالمي", title: "خمّن العلم", back: "↩ رجوع", langBtn: "English",
-    wpLabel: "تقدمك", world: "العالم كله", knownSuffix: "دولة اتعرفت",
+    wpLabel: "تقدمك", world: "العالم كله", knownSuffix: "دولة اتعرفت", blocDivider: "أو اختار تصنيف تاني",
     best: n => `أعلى نتيجة: ${n}`, bestStreak: n => `أعلى تتابع: ${n}`,
 
     categoryFlags: "🏳️ أعلام", categoryFlagsDesc: "خمّن الدولة من علمها",
+    categoryZoom: "🔍 زووم إن", categoryZoomDesc: "خمّن الدولة من جزء مكبّر ومقصوص من علمها بس",
     categoryCapitals: "🏛️ عواصم", categoryCapitalsDesc: "خمّن عاصمة كل دولة",
     categoryMaps: "🗺️ خرايط", categoryMapsDesc: "حدد مكان الدولة على الخريطة",
 
@@ -857,6 +970,9 @@ const STR = {
 
     formatChoice: "🔘 اختيارات", formatChoiceDesc: "اختار الإجابة من 4 اختيارات",
     formatType: "⌨️ اكتب بنفسك", formatTypeDesc: "اكتب الإجابة من غير مساعدة",
+    formatChoiceCrop: "🔍 اختيارات (قصاصة من العلم)", formatChoiceCropDesc: "هتشوف جزء مكبّر ومقصوص من العلم بس — أصعب بكتير",
+    formatTypeCrop: "🔍⌨️ اكتب (قصاصة من العلم)", formatTypeCropDesc: "اكتب الإجابة وانت شايف جزء من العلم بس",
+    hintBtn: "💡 تلميح",
     mapByCountry: "🏳️ حدد من اسم الدولة", mapByCountryDesc: "هيظهرلك اسم دولة، دوس مكانها",
     mapByCapital: "🏛️ حدد من اسم العاصمة", mapByCapitalDesc: "هيظهرلك اسم عاصمة، دوس مكان دولتها",
 
@@ -871,7 +987,7 @@ const STR = {
     youPickedSub: n => `انت دُست على: ${n}`,
 
     typePlaceholderCountry: "اكتب اسم الدولة...", typePlaceholderCapital: "اكتب اسم العاصمة...",
-    submit: "تأكيد", next: "التالي ←", sessionScoreLabel: "صح هذه الجولة",
+    submit: "تأكيد", next: "التالي ←", sessionScoreLabel: "صح هذه الجولة", streakLabel: "التتابع الحالي",
     ofCount: n => `صح من ${n} دولة`,
 
     bulletTimeUp: "⏱️ خلص الوقت!",
@@ -886,7 +1002,7 @@ const STR = {
     practiceDone: "خلّصت كل الدول في التدريب ده — جاهز تجرب الوضع العادي؟",
 
     capitalLabel: n => `العاصمة: ${n}`,
-    prevBtn: "→ السابقة",
+    prevBtn: "→ السابقة", studyNextLabel: "التالية ←",
     missedTitle: "الدول اللي غلطت فيها",
 
     updatedProgress: "تقدمك المُحدَّث", playAgain: "العب تاني", changeMode: "غيّر نوع اللعبة", menu: "القائمة",
@@ -899,14 +1015,14 @@ const STR = {
     historyReasonCleared: "خلّص القارة", historyReasonLost: "خسر",
     historyReasonBulletTime: "خلص الوقت", historyReasonBulletMistake: "غلط",
     historyReasonBulletClear: "خلّص القارة",
-    historyMissedLabel: n => `غلط في ${n}`,
   },
   en: {
     eyebrow: "World Passport", title: "Guess the Flag", back: "↩ Back", langBtn: "العربية",
-    wpLabel: "Your progress", world: "Whole World", knownSuffix: "countries known",
+    wpLabel: "Your progress", world: "Whole World", knownSuffix: "countries known", blocDivider: "Or pick another grouping",
     best: n => `Best score: ${n}`, bestStreak: n => `Best streak: ${n}`,
 
     categoryFlags: "🏳️ Flags", categoryFlagsDesc: "Guess the country from its flag",
+    categoryZoom: "🔍 Zoom In", categoryZoomDesc: "Guess the country from a zoomed-in, cropped piece of its flag only",
     categoryCapitals: "🏛️ Capitals", categoryCapitalsDesc: "Guess each country's capital",
     categoryMaps: "🗺️ Maps", categoryMapsDesc: "Locate the country on the map",
 
@@ -919,6 +1035,9 @@ const STR = {
 
     formatChoice: "🔘 Multiple choice", formatChoiceDesc: "Pick the answer from 4 options",
     formatType: "⌨️ Type it yourself", formatTypeDesc: "Type the answer with no hints",
+    formatChoiceCrop: "🔍 Multiple choice (flag snippet)", formatChoiceCropDesc: "You'll see a zoomed-in, cropped piece of the flag — much harder",
+    formatTypeCrop: "🔍⌨️ Type it (flag snippet)", formatTypeCropDesc: "Type the answer while seeing only part of the flag",
+    hintBtn: "💡 Hint",
     mapByCountry: "🏳️ Locate by country name", mapByCountryDesc: "You'll see a country name — tap its spot",
     mapByCapital: "🏛️ Locate by capital name", mapByCapitalDesc: "You'll see a capital name — tap its country",
 
@@ -933,7 +1052,7 @@ const STR = {
     youPickedSub: n => `You tapped: ${n}`,
 
     typePlaceholderCountry: "Type the country name...", typePlaceholderCapital: "Type the capital name...",
-    submit: "Submit", next: "Next →", sessionScoreLabel: "Correct this round",
+    submit: "Submit", next: "Next →", sessionScoreLabel: "Correct this round", streakLabel: "Current streak",
     ofCount: n => `correct out of ${n}`,
 
     bulletTimeUp: "⏱️ Time's up!",
@@ -948,7 +1067,7 @@ const STR = {
     practiceDone: "You've gone through every country in this practice set — ready for normal mode?",
 
     capitalLabel: n => `Capital: ${n}`,
-    prevBtn: "→ Previous",
+    prevBtn: "→ Previous", studyNextLabel: "Next →",
     missedTitle: "Countries you missed",
 
     updatedProgress: "Your updated progress", playAgain: "Play again", changeMode: "Change mode", menu: "Menu",
@@ -961,7 +1080,6 @@ const STR = {
     historyReasonCleared: "Cleared", historyReasonLost: "Lost",
     historyReasonBulletTime: "Time up", historyReasonBulletMistake: "Missed one",
     historyReasonBulletClear: "Cleared",
-    historyMissedLabel: n => `Missed ${n}`,
   }
 };
 
@@ -1042,15 +1160,15 @@ function pointInFeature(x, y, feature) {
 
 function worldViewBox() { return '-180 -90 360 180'; }
 
-// Computes a tight SVG viewBox around one continent's countries (plus
-// their markers), padded a bit. Countries whose bounding box spans
-// more than 300 degrees of longitude cross the antimeridian (e.g.
-// Fiji) and would otherwise blow the box out to near-global size, so
+// Computes a tight SVG viewBox around a set of countries (plus their
+// markers), padded a bit. Countries whose bounding box spans more
+// than 300 degrees of longitude cross the antimeridian (e.g. Fiji)
+// and would otherwise blow the box out to near-global size, so
 // they're excluded from the box calculation (they still render fine,
 // just don't influence the zoom level).
-function continentViewBox(key) {
-  const codes = countries.filter(c => c.cont === key && mapDataByCode[c.code]).map(c => c.code);
-  const markerCodes = countries.filter(c => c.cont === key && MARKER_POINTS[c.code]).map(c => c.code);
+function viewBoxForCodes(allCodes) {
+  const codes = allCodes.filter(code => mapDataByCode[code]);
+  const markerCodes = allCodes.filter(code => MARKER_POINTS[code]);
   if (!codes.length && !markerCodes.length) return worldViewBox();
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1069,6 +1187,14 @@ function continentViewBox(key) {
   const w = maxX - minX, h = maxY - minY;
   const padX = w * 0.08, padY = h * 0.08;
   return `${(minX - padX).toFixed(1)} ${(minY - padY).toFixed(1)} ${(w + padX * 2).toFixed(1)} ${(h + padY * 2).toFixed(1)}`;
+}
+function continentViewBox(key) {
+  return viewBoxForCodes(countries.filter(c => c.cont === key).map(c => c.code));
+}
+function regionViewBox(key) {
+  if (!key) return worldViewBox();
+  if (isBlocKey(key)) return viewBoxForCodes(findBloc(key).codes);
+  return continentViewBox(key);
 }
 
 /* ---------------------------------------------------------------------
@@ -1110,7 +1236,121 @@ function t() { return STR[LANG]; }
 function nameOf(c) { return LANG === "ar" ? c.ar : c.en; }
 function capOf(c) { return LANG === "ar" ? c.capAr : c.capEn; }
 function contName(cont) { return LANG === "ar" ? cont.ar : cont.en; }
-function flagUrl(code) { return `https://flagcdn.com/w320/${code}.png`; }
+// Two independent providers, in case one is down or blocked for the
+// player's network. jsdelivr/flag-icons is a completely separate host
+// from flagcdn, so an outage on one rarely takes down both.
+const FLAG_SOURCES = [
+  code => `https://flagcdn.com/w320/${code}.png`,
+  code => `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7/flags/4x3/${code}.svg`,
+];
+function flagUrl(code) { return FLAG_SOURCES[0](code); }
+
+// A small inline SVG (country-code lettering on a plain tile) used only
+// when every real flag provider has failed — keeps the layout intact
+// instead of showing a broken-image icon.
+function flagPlaceholderSrc(code) {
+  const label = code.toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120">`
+    + `<rect width="160" height="120" fill="#1a2c47"/>`
+    + `<text x="80" y="68" font-family="Tahoma,sans-serif" font-size="30" font-weight="700" fill="#e6c368" text-anchor="middle">${label}</text>`
+    + `</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+// Sets an <img>'s flag, falling back to the next provider on error, and
+// finally to flagPlaceholderSrc() so a network hiccup shows a readable
+// country code instead of a broken-image icon.
+function setFlagSrc(imgEl, code, altText) {
+  imgEl.alt = altText || '';
+  imgEl.classList.remove('flag-fallback');
+  let attempt = 0;
+  imgEl.onerror = () => {
+    attempt++;
+    if (attempt < FLAG_SOURCES.length) {
+      imgEl.src = FLAG_SOURCES[attempt](code);
+    } else {
+      imgEl.onerror = null;
+      imgEl.classList.add('flag-fallback');
+      imgEl.src = flagPlaceholderSrc(code);
+    }
+  };
+  imgEl.src = FLAG_SOURCES[0](code);
+}
+
+// Bumped every time renderRound() sets up a new flag; lets an in-flight
+// crop pick from a previous, already-abandoned question detect that it's
+// stale and bail out instead of overwriting the current one.
+let cropRequestId = 0;
+
+// Picks a crop window for "zoom in" snippet mode that's actually
+// guessable. A purely blind random crop can land entirely inside a flat
+// single-color band — several flags share a plain white/red/black strip
+// (e.g. UAE, Yemen, Sudan, Kuwait), which makes that snippet impossible
+// to tell apart. Instead: load the flag into an offscreen canvas, try a
+// handful of random crop windows, measure each one's color variance, and
+// keep whichever window actually has some visual detail in it (an edge,
+// an emblem, a star, a color change...).
+function applyRandomCrop(code, requestId) {
+  const fallback = () => {
+    if (requestId !== cropRequestId) return;
+    const scale = (2.2 + Math.random() * 1.2).toFixed(2);
+    const posX = Math.round(10 + Math.random() * 80);
+    const posY = Math.round(10 + Math.random() * 80);
+    setFlagSrc(flagImg, code, flagImg.alt);
+    flagImg.style.transform = `scale(${scale})`;
+    flagImg.style.objectPosition = `${posX}% ${posY}%`;
+  };
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    if (requestId !== cropRequestId) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      let best = null, bestVariance = -1;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const frac = 0.26 + Math.random() * 0.14; // crop window ~26%-40% of the flag
+        const cw = Math.max(6, Math.round(canvas.width * frac));
+        const ch = Math.max(6, Math.round(canvas.height * frac));
+        const cx = Math.round(Math.random() * Math.max(1, canvas.width - cw));
+        const cy = Math.round(Math.random() * Math.max(1, canvas.height - ch));
+        const { data } = ctx.getImageData(cx, cy, cw, ch);
+
+        let rSum = 0, gSum = 0, bSum = 0, n = 0;
+        for (let i = 0; i < data.length; i += 4 * 9) { rSum += data[i]; gSum += data[i + 1]; bSum += data[i + 2]; n++; }
+        const rMean = rSum / n, gMean = gSum / n, bMean = bSum / n;
+        let variance = 0;
+        for (let i = 0; i < data.length; i += 4 * 9) {
+          variance += (data[i] - rMean) ** 2 + (data[i + 1] - gMean) ** 2 + (data[i + 2] - bMean) ** 2;
+        }
+        variance /= n;
+
+        if (variance > bestVariance) { bestVariance = variance; best = { cx, cy, cw, ch }; }
+        if (variance > 1200) break; // already has plenty of detail, no need to keep sampling
+      }
+
+      const out = document.createElement('canvas');
+      out.width = 200; out.height = 200;
+      out.getContext('2d').drawImage(canvas, best.cx, best.cy, best.cw, best.ch, 0, 0, out.width, out.height);
+
+      if (requestId !== cropRequestId) return;
+      flagImg.style.transform = 'none';
+      flagImg.style.objectPosition = 'center';
+      flagImg.src = out.toDataURL();
+    } catch (err) {
+      // Tainted canvas (e.g. a CORS hiccup) or any other failure —
+      // fall back to the old blind random crop rather than breaking the round.
+      fallback();
+    }
+  };
+  img.onerror = fallback;
+  img.src = flagUrl(code);
+}
 
 function shuffle(arr) {
   const a = [...arr];
@@ -1161,18 +1401,39 @@ function lightNormalize(str) {
    Progress & scores. Everything below lives in memory only for the
    current page load — no localStorage, so a refresh clears it.
    --------------------------------------------------------------------- */
-const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set() };
+const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set(), zoom: new Set() };
 const highScores = {};
 const sessionHistory = []; // one entry per finished round, most recent last
 
 function categoryKnownSet() { return knownByCategory[selectedCategory]; }
-function countInContinent(key) { return countries.filter(c => c.cont === key).length; }
-function knownInContinent(key) { return countries.filter(c => c.cont === key && categoryKnownSet().has(c.code)).length; }
+
+// "Region" here means either a continent key (e.g. "africa") or a
+// bloc key (e.g. "bloc_eu") — everything downstream just needs the
+// country list for whichever one was picked.
+function regionCountries(key) {
+  if (!key) return countries;
+  if (isBlocKey(key)) return countries.filter(c => findBloc(key).codes.includes(c.code));
+  return countries.filter(c => c.cont === key);
+}
+function regionLabel(key) {
+  if (!key) return t().world;
+  if (isBlocKey(key)) { const b = findBloc(key); return LANG === 'ar' ? b.ar : b.en; }
+  const cont = CONTINENTS.find(c => c.key === key);
+  return cont ? contName(cont) : key;
+}
+function regionEmoji(key) {
+  if (isBlocKey(key)) return findBloc(key).emoji;
+  const cont = CONTINENTS.find(c => c.key === key);
+  return cont ? cont.emoji : '🌐';
+}
+
+function countInContinent(key) { return regionCountries(key).length; }
+function knownInContinent(key) { return regionCountries(key).filter(c => categoryKnownSet().has(c.code)).length; }
 
 function highScoreKey(continentKey) {
   const cont = continentKey || 'world';
   if (selectedSpeed === 'bullet') return `${currentMode}|bullet|${selectedTimeLimit}|${cont}`;
-  return `${currentMode}|normal|${cont}`;
+  return `${currentMode}|${selectedSpeed}|${cont}`;
 }
 
 /* ---------------------------------------------------------------------
@@ -1200,6 +1461,8 @@ const speedGrid = document.getElementById('speedGrid');
 const timeGrid = document.getElementById('timeGrid');
 const formatGrid = document.getElementById('formatGrid');
 const continentGrid = document.getElementById('continentGrid');
+const blocDivider = document.getElementById('blocDivider');
+const blocGrid = document.getElementById('blocGrid');
 const wpLabel = document.getElementById('wpLabel');
 const worldKnownEl = document.getElementById('worldKnown');
 const worldTotalEl = document.getElementById('worldTotal');
@@ -1225,6 +1488,7 @@ const typeSuggestions = document.getElementById('typeSuggestions');
 const typeInput = document.getElementById('typeInput');
 const typeSubmit = document.getElementById('typeSubmit');
 const footRow = document.getElementById('footRow');
+const hintBtn = document.getElementById('hintBtn');
 const nextBtn = document.getElementById('nextBtn');
 const studyControls = document.getElementById('studyControls');
 const studyPrevBtn = document.getElementById('studyPrevBtn');
@@ -1293,6 +1557,9 @@ function applyStaticText() {
   sessionScoreLabelEl.textContent = t().sessionScoreLabel;
   typeSubmit.textContent = t().submit;
   nextBtn.textContent = t().next;
+  hintBtn.textContent = t().hintBtn;
+  studyPrevBtn.textContent = t().prevBtn;
+  studyNextBtn.textContent = t().studyNextLabel;
 }
 
 langBtn.addEventListener('click', () => {
@@ -1319,6 +1586,7 @@ let selectedTimeLimit = 60;       // seconds, bullet mode only
 function renderCategoryScreen() {
   const cats = [
     { id: 'flags',    label: t().categoryFlags,    desc: t().categoryFlagsDesc },
+    { id: 'zoom',     label: t().categoryZoom,      desc: t().categoryZoomDesc },
     { id: 'capitals', label: t().categoryCapitals, desc: t().categoryCapitalsDesc },
     { id: 'maps',     label: t().categoryMaps,     desc: t().categoryMapsDesc },
   ];
@@ -1348,7 +1616,11 @@ function renderSpeedScreen() {
   } else {
     speeds.push({ id: 'bullet', label: t().speedBullet, desc: t().speedBulletDesc });
   }
-  speeds.push({ id: 'study', label: t().speedStudy, desc: t().speedStudyDesc });
+  // Study always shows the whole flag, never a cropped snippet, so it
+  // doesn't belong under the zoom category — only flags/capitals/maps offer it.
+  if (selectedCategory !== 'zoom') {
+    speeds.push({ id: 'study', label: t().speedStudy, desc: t().speedStudyDesc });
+  }
 
   speedGrid.innerHTML = '';
   speeds.forEach(s => {
@@ -1365,8 +1637,9 @@ function chooseSpeed(id) {
   if (id === 'bullet') { renderTimeScreen(); navTo(timeScreen); return; }
 
   if (id === 'study') {
+    // Reachable only for 'flags', 'capitals', and 'maps' — zoom never offers 'study'.
     currentMode = selectedCategory === 'maps' ? 'map_study'
-      : (selectedCategory === 'flags' ? 'flag_study' : 'cap_study');
+      : (selectedCategory === 'capitals' ? 'cap_study' : 'flag_study');
     renderContinentScreen(); navTo(continentScreen); return;
   }
 
@@ -1401,6 +1674,11 @@ function renderFormatScreen() {
     options = [
       { id: 'map_country', label: t().mapByCountry, desc: t().mapByCountryDesc },
       { id: 'map_capital', label: t().mapByCapital, desc: t().mapByCapitalDesc },
+    ];
+  } else if (selectedCategory === 'zoom') {
+    options = [
+      { id: 'flag_choice_crop', label: t().formatChoiceCrop, desc: t().formatChoiceCropDesc },
+      { id: 'flag_type_crop',   label: t().formatTypeCrop,   desc: t().formatTypeCropDesc },
     ];
   } else {
     const prefix = selectedCategory === 'flags' ? 'flag' : 'cap';
@@ -1454,6 +1732,24 @@ function renderContinentScreen() {
     card.addEventListener('click', () => startGame(cont.key));
     continentGrid.appendChild(card);
   });
+
+  blocDivider.textContent = t().blocDivider;
+  blocGrid.innerHTML = '';
+  BLOCS.forEach(bloc => {
+    const total = countInContinent(bloc.key);
+    const known = knownInContinent(bloc.key);
+    const best = highScores[highScoreKey(bloc.key)] || 0;
+    const card = document.createElement('button');
+    card.className = 'continent-card';
+    card.innerHTML = `
+      <div class="cc-top"><span class="cc-emoji">${bloc.emoji}</span><span class="cc-name">${regionLabel(bloc.key)}</span></div>
+      <div class="cc-count">${known} / ${total} ${t().knownSuffix}</div>
+      <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(known/total)*100}%"></div></div>
+    `;
+    card.addEventListener('click', () => startGame(bloc.key));
+    blocGrid.appendChild(card);
+  });
 }
 
 /* ---------------------------------------------------------------------
@@ -1481,13 +1777,18 @@ let baseViewBox = { x: 0, y: -90, w: 360, h: 180 };
 let viewBox = { x: 0, y: -90, w: 360, h: 180 };
 let currentMapCodes = [];    // codes actually drawn (current continent only, not the whole world)
 let mapAttempts = 0;         // per-question attempt counter, used by practice mode's 3-try cap
+let hintUsedThisQuestion = false;
 
 function isMapMode() { return currentMode === 'map_country' || currentMode === 'map_capital' || currentMode === 'map_study'; }
 function isStudyMode() { return selectedSpeed === 'study'; }
 function isPractice() { return selectedSpeed === 'practice' && isMapMode(); }
 function isBullet() { return selectedSpeed === 'bullet' && !isMapMode(); }
 function isCapitalMode() { return currentMode === 'cap_choice' || currentMode === 'cap_type' || currentMode === 'cap_study'; }
-function isTypeMode() { return currentMode === 'flag_type' || currentMode === 'cap_type'; }
+function isTypeMode() { return currentMode === 'flag_type' || currentMode === 'cap_type' || currentMode === 'flag_type_crop'; }
+function isCropMode() { return currentMode === 'flag_choice_crop' || currentMode === 'flag_type_crop'; }
+// Hint is only offered for the flags/capitals categories in normal speed —
+// bullet has no room for it, practice/study already have no real penalty.
+function canHint() { return !isMapMode() && !isStudyMode() && selectedSpeed === 'normal'; }
 
 let bulletTimerHandle = null;
 let bulletRemaining = 0;
@@ -1517,7 +1818,7 @@ function startBulletTimer() {
 function startGame(continentKey) {
   stopBulletTimer();
   currentContinentKey = continentKey;
-  pool = continentKey ? countries.filter(c => c.cont === continentKey) : countries;
+  pool = regionCountries(continentKey);
   if (isMapMode()) pool = pool.filter(c => mapDataByCode[c.code] || MARKER_POINTS[c.code]);
 
   deck = shuffle(pool);
@@ -1537,7 +1838,7 @@ function startGame(continentKey) {
   updateGameHeader();
 
   if (isMapMode()) {
-    const vbStr = continentKey ? continentViewBox(continentKey) : worldViewBox();
+    const vbStr = regionViewBox(continentKey);
     const [x, y, w, h] = vbStr.split(' ').map(Number);
     baseViewBox = { x, y, w, h };
     currentMapCodes = pool.map(c => c.code);
@@ -1856,7 +2157,9 @@ function showVerdict(kind, mainText, subText) {
 }
 
 function updateGameHeader() {
-  livesDisplay.innerHTML = '❤️'.repeat(lives) + '<span class="lost">' + '🖤'.repeat(MAX_LIVES - lives) + '</span>';
+  const safeLives = Math.max(0, lives);
+  livesDisplay.innerHTML = '❤️'.repeat(safeLives) + '<span class="lost">' + '🖤'.repeat(MAX_LIVES - safeLives) + '</span>';
+  sessionScoreLabelEl.textContent = isBullet() ? t().streakLabel : t().sessionScoreLabel;
   sessionScoreEl.textContent = sessionCorrect;
 }
 
@@ -1870,6 +2173,7 @@ function renderRound() {
 
   answered = false;
   mapAttempts = 0;
+  hintUsedThisQuestion = false;
   verdictBadge.classList.remove('show', 'correct', 'wrong');
   verdictBadge.textContent = '';
   nextBtn.classList.remove('ready');
@@ -1877,6 +2181,8 @@ function renderRound() {
   typeInput.disabled = false;
   typeSubmit.disabled = false;
   studyCapitalLabel.classList.add('hidden');
+  hintBtn.classList.toggle('hidden', !canHint());
+  hintBtn.disabled = false;
 
   currentCorrect = deck[deckIndex];
 
@@ -1902,9 +2208,23 @@ function renderRound() {
     return;
   }
 
-  flagImg.src = flagUrl(currentCorrect.code);
   flagImg.alt = nameOf(currentCorrect);
   mapTargetName.classList.add('hidden');
+
+  // Snippet mode: show only a random zoomed-in piece of the flag,
+  // instead of the whole thing, for a much harder question. The crop
+  // window is picked by applyRandomCrop() below, which avoids landing on
+  // a flat single-color area (several flags share plain white/red/etc.
+  // bands, which would make the snippet unguessable).
+  flagFrame.classList.toggle('cropped', isCropMode());
+  cropRequestId++;
+  if (isCropMode()) {
+    applyRandomCrop(currentCorrect.code, cropRequestId);
+  } else {
+    setFlagSrc(flagImg, currentCorrect.code, nameOf(currentCorrect));
+    flagImg.style.transform = 'none';
+    flagImg.style.objectPosition = 'center';
+  }
 
   const capMode = isCapitalMode();
   countryLabel.classList.toggle('hidden', !capMode);
@@ -1994,8 +2314,7 @@ function renderStudyRound() {
     return;
   }
 
-  flagImg.src = flagUrl(c.code);
-  flagImg.alt = nameOf(c);
+  setFlagSrc(flagImg, c.code, nameOf(c));
   mapTargetName.classList.add('hidden');
   countryLabel.classList.remove('hidden');
   countryLabel.textContent = nameOf(c);
@@ -2050,6 +2369,34 @@ function handleAnswerResult(isCorrect, correctLabel) {
   }
   markResult(isCorrect, correctLabel);
 }
+
+/* ---------------------------------------------------------------------
+   Optional hint — costs one life immediately, usable once per question.
+   Choice mode: removes two of the three wrong options (down to 50/50).
+   Type mode: fills in the first letter of the correct answer.
+   --------------------------------------------------------------------- */
+function useHint() {
+  if (hintUsedThisQuestion || answered || !canHint() || lives <= 0) return;
+  hintUsedThisQuestion = true;
+  hintBtn.disabled = true;
+
+  lives--;
+  updateGameHeader();
+
+  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : nameOf(currentCorrect);
+
+  if (isTypeMode()) {
+    typeInput.value = correctLabel.charAt(0);
+    typeInput.focus();
+    renderSuggestions();
+  } else {
+    const wrongButtons = [...choicesEl.children].filter(b => b.textContent !== correctLabel);
+    shuffle(wrongButtons).slice(0, 2).forEach(b => { b.style.display = 'none'; });
+  }
+
+  if (lives <= 0) hintBtn.classList.add('hidden');
+}
+hintBtn.addEventListener('click', useHint);
 
 function selectChoice(label, correctLabel, btnEl) {
   if (answered) return;
@@ -2193,8 +2540,7 @@ function buildCountryChip(c) {
   const chip = document.createElement('div');
   chip.className = 'missed-chip';
   const img = document.createElement('img');
-  img.src = flagUrl(c.code);
-  img.alt = nameOf(c);
+  setFlagSrc(img, c.code, nameOf(c));
   const span = document.createElement('span');
   span.textContent = nameOf(c);
   chip.appendChild(img);
@@ -2247,6 +2593,7 @@ function logHistoryEntry(reason) {
 
 function categoryLabel(category) {
   if (category === 'flags') return t().categoryFlags;
+  if (category === 'zoom') return t().categoryZoom;
   if (category === 'capitals') return t().categoryCapitals;
   return t().categoryMaps;
 }
@@ -2257,9 +2604,7 @@ function speedLabel(speed) {
   return t().speedNormal;
 }
 function continentLabel(key) {
-  if (!key) return t().world;
-  const cont = CONTINENTS.find(c => c.key === key);
-  return cont ? contName(cont) : key;
+  return regionLabel(key);
 }
 function reasonLabel(reason) {
   if (reason === 'cleared') return t().historyReasonCleared;
