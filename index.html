@@ -149,9 +149,6 @@
       inset 0 0 0 1px rgba(0,0,0,0.4);
   }
   .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; transition: none; }
-  /* Shown only when every flag provider failed to load (offline/blocked
-     network) — keep the placeholder text readable, not stretched/cropped. */
-  .flag-frame img.flag-fallback { object-fit: contain; }
   .prompt { font-size: 0.75rem; color: rgba(244,236,216,0.5); letter-spacing: 0.0625rem; }
 
   /* Result badge sits below the flag/map (never on top of it) so it's always visible */
@@ -317,6 +314,55 @@
   .study-nav-btn:hover { background: var(--gold-bright); }
   .study-position { font-size: 0.75rem; color: rgba(244,236,216,0.6); white-space: nowrap; }
 
+  .memory-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
+  .memory-top-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8125rem; color: rgba(244,236,216,0.7);
+  }
+  .memory-progress b { color: var(--gold-bright); }
+  .memory-timer { font-weight: 800; color: var(--gold-bright); letter-spacing: 0.0625rem; }
+
+  .memory-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.5rem;
+    max-height: 40vh; overflow-y: auto; padding: 0.25rem;
+  }
+  .memory-box {
+    aspect-ratio: 3 / 2; border-radius: 0.375rem; border: 1px dashed var(--line);
+    background: rgba(244,236,216,0.03); display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .memory-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .memory-box .memory-box-label {
+    position: absolute; bottom: 0; left: 0; right: 0; background: rgba(10,22,38,0.75);
+    font-size: 0.5625rem; text-align: center; padding: 1px 2px; color: var(--parchment);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .memory-box.solved { border-style: solid; border-color: var(--green); }
+  .memory-box.pending { border-style: solid; border-color: var(--gold); opacity: 0.75; }
+
+  .memory-hint-row { display: flex; gap: 0.5rem; justify-content: center; }
+  .memory-hint-btn {
+    flex: 1; background: none; border: 1px solid var(--gold); color: var(--gold-bright);
+    padding: 0.625rem; border-radius: 0.4375rem; font-size: 1.125rem; cursor: pointer;
+    font-family: inherit; min-height: 2.75rem;
+  }
+  .memory-hint-btn:hover:not(:disabled) { background: rgba(201,162,75,0.12); }
+  .memory-hint-btn:disabled { opacity: 0.3; cursor: default; }
+  .memory-hint-msg { text-align: center; font-size: 0.75rem; color: var(--gold-bright); }
+
+  .memory-giveup-btn {
+    background: none; border: 1px solid var(--stamp-red); color: #f0b8b0;
+    padding: 0.625rem; border-radius: 0.4375rem; font-size: 0.8125rem; cursor: pointer;
+    font-family: inherit; min-height: 2.5rem;
+  }
+  .memory-giveup-btn:hover { background: rgba(163,55,44,0.12); }
+  .type-input.shake { animation: shake 0.3s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
   .history-empty { text-align: center; color: rgba(244,236,216,0.5); font-size: 0.8125rem; padding: 1.875rem 10px; }
   .history-row {
     border: 1px solid var(--line); border-radius: 0.625rem; padding: 0.75rem; margin-bottom: 10px;
@@ -421,6 +467,25 @@
       <button class="study-nav-btn" id="studyPrevBtn">→ السابقة</button>
       <span class="study-position" id="studyPosition">1 / 54</span>
       <button class="study-nav-btn" id="studyNextBtn">التالية ←</button>
+    </div>
+
+    <div class="memory-wrap hidden" id="memoryWrap">
+      <div class="memory-top-row">
+        <span class="memory-progress" id="memoryProgress">0 / 0</span>
+        <span class="memory-timer" id="memoryTimer">⏱️ 00:00</span>
+      </div>
+      <div class="memory-grid" id="memoryGrid"></div>
+      <div class="memory-hint-row">
+        <button class="memory-hint-btn" id="memoryHintSolveBtn">🎲</button>
+        <button class="memory-hint-btn" id="memoryHintLetterBtn">🔤</button>
+        <button class="memory-hint-btn" id="memoryHintFlagBtn">🏳️</button>
+      </div>
+      <div class="memory-hint-msg hidden" id="memoryHintMsg"></div>
+      <div class="type-row">
+        <input type="text" class="type-input" id="memoryInput" autocomplete="off">
+        <button class="type-submit" id="memorySubmit">تأكيد</button>
+      </div>
+      <button class="memory-giveup-btn" id="memoryGiveUpBtn">🏳️ استسلام</button>
     </div>
   </div>
 
@@ -554,7 +619,7 @@ const countries = [
   {code:"kp",cont:"asia",ar:"كوريا الشمالية",en:"North Korea",capAr:"بيونغ يانغ",capEn:"Pyongyang"},
   {code:"om",cont:"asia",ar:"عُمان",en:"Oman",capAr:"مسقط",capEn:"Muscat"},
   {code:"pk",cont:"asia",ar:"باكستان",en:"Pakistan",capAr:"إسلام آباد",capEn:"Islamabad"},
-  {code:"ps",cont:"asia",ar:"فلسطين",en:"Palestine",capAr:"رام الله",capEn:"Ramallah"},
+  {code:"ps",cont:"asia",ar:"فلسطين",en:"Palestine",capAr:"القدس",capEn:"Jerusalem"},
   {code:"ph",cont:"asia",ar:"الفلبين",en:"Philippines",capAr:"مانيلا",capEn:"Manila"},
   {code:"qa",cont:"asia",ar:"قطر",en:"Qatar",capAr:"الدوحة",capEn:"Doha"},
   {code:"sa",cont:"asia",ar:"السعودية",en:"Saudi Arabia",capAr:"الرياض",capEn:"Riyadh"},
@@ -683,7 +748,7 @@ const CONFUSABLE_GROUPS = [
   ["jo","ps","kw","ae"],            // pan-Arab colors: black-white-green + red triangle/band
   ["tr","tn"],                      // red field, white crescent + star
   ["id","mc","pl"],                 // two-tone horizontal red/white (Indonesia, Monaco) and white/red (Poland)
-  ["td","ro"],                      // vertical blue-yellow-red (Chad, Romania)
+  ["td","ro","md"],                 // vertical blue-yellow-red (Chad, Romania, Moldova)
   ["nl","lu"],                      // horizontal red-white-blue (Netherlands, Luxembourg)
   ["ie","ci"],                      // green-white-orange, mirrored order (Ireland, Ivory Coast)
   ["co","ec","ve","bo"],            // horizontal yellow-blue-red family (Colombia, Ecuador, Venezuela, Bolivia)
@@ -699,6 +764,8 @@ const CONFUSABLE_GROUPS = [
   ["dz","pk"],                      // green field, white crescent and star
   ["th","cr"],                      // horizontal bands with a thick middle stripe (Thailand, Costa Rica)
   ["lr","us","my"],                 // stripes + star(s) on a canton (Liberia, United States, Malaysia)
+  ["qa","bh"],                      // near-identical serrated white band on a solid field — maroon (Qatar) vs red (Bahrain)
+  ["vn","cn"],                      // red field with yellow star(s) — one big star (Vietnam) vs five (China)
 ];
 
 
@@ -960,6 +1027,17 @@ const STR = {
     categoryZoom: "🔍 زووم إن", categoryZoomDesc: "خمّن الدولة من جزء مكبّر ومقصوص من علمها بس",
     categoryCapitals: "🏛️ عواصم", categoryCapitalsDesc: "خمّن عاصمة كل دولة",
     categoryMaps: "🗺️ خرايط", categoryMapsDesc: "حدد مكان الدولة على الخريطة",
+    categoryMemory: "🧠 الذاكرة", categoryMemoryDesc: "اكتب الدول واحدة واحدة وشوف علمها يظهر — من غير وقت محدد ولا قلوب",
+    memoryTargetCountry: "🏳️ اكتب أسماء الدول", memoryTargetCountryDesc: "اكتب اسم كل دولة عشان علمها يظهر",
+    memoryTargetCapital: "🏛️ اكتب أسماء العواصم", memoryTargetCapitalDesc: "اكتب عاصمة كل دولة عشان علمها يظهر",
+    memoryProgress: (s, n) => `${s} / ${n}`,
+    memoryPlaceholder: "اكتب اسم دولة...",
+    memoryGiveUp: "🏳️ استسلام", memoryGiveUpConfirm: "متأكد؟ هتشوف كل الدول اللي فاتتك.",
+    memoryHintSolve: "🎲 حل عشوائي", memoryHintLetter: "🔤 حرف", memoryHintFlag: "🏳️ علم",
+    memoryHintLetterMsg: n => `تلميح: في دولة بتبدأ بحرف "${n}"`,
+    memoryBestTime: t => `أفضل وقت: ${t}`,
+    memoryDoneTitle: "برافو! جمعتهم كلهم", memoryDoneTime: t => `في ${t}`,
+    memoryGaveUpTitle: n => `وقفت بعد ما جمعت ${n}`,
 
     speedNormal: "🛡️ عادي", speedNormalDesc: "3 محاولات في القارة، من غير وقت",
     speedBullet: "⚡ بوليت", speedBulletDesc: "أكبر عدد إجابات صح متتالية في وقت محدد — أول غلطة تخلص الجولة",
@@ -970,8 +1048,8 @@ const STR = {
 
     formatChoice: "🔘 اختيارات", formatChoiceDesc: "اختار الإجابة من 4 اختيارات",
     formatType: "⌨️ اكتب بنفسك", formatTypeDesc: "اكتب الإجابة من غير مساعدة",
-    formatChoiceCrop: "🔍 اختيارات ", formatChoiceCropDesc: "هتشوف جزء مكبّر ومقصوص من العلم بس — أصعب بكتير",
-    formatTypeCrop: "🔍 ⌨️ اكتب ", formatTypeCropDesc: "اكتب الإجابة وانت شايف جزء من العلم بس",
+    formatChoiceCrop: "🔍 اختيارات (قصاصة من العلم)", formatChoiceCropDesc: "هتشوف جزء مكبّر ومقصوص من العلم بس — أصعب بكتير",
+    formatTypeCrop: "🔍⌨️ اكتب (قصاصة من العلم)", formatTypeCropDesc: "اكتب الإجابة وانت شايف جزء من العلم بس",
     hintBtn: "💡 تلميح",
     mapByCountry: "🏳️ حدد من اسم الدولة", mapByCountryDesc: "هيظهرلك اسم دولة، دوس مكانها",
     mapByCapital: "🏛️ حدد من اسم العاصمة", mapByCapitalDesc: "هيظهرلك اسم عاصمة، دوس مكان دولتها",
@@ -1025,6 +1103,17 @@ const STR = {
     categoryZoom: "🔍 Zoom In", categoryZoomDesc: "Guess the country from a zoomed-in, cropped piece of its flag only",
     categoryCapitals: "🏛️ Capitals", categoryCapitalsDesc: "Guess each country's capital",
     categoryMaps: "🗺️ Maps", categoryMapsDesc: "Locate the country on the map",
+    categoryMemory: "🧠 Memory", categoryMemoryDesc: "Type countries one by one and watch their flags appear — no timer pressure, no lives",
+    memoryTargetCountry: "🏳️ Type country names", memoryTargetCountryDesc: "Type each country's name to reveal its flag",
+    memoryTargetCapital: "🏛️ Type capital names", memoryTargetCapitalDesc: "Type each country's capital to reveal its flag",
+    memoryProgress: (s, n) => `${s} / ${n}`,
+    memoryPlaceholder: "Type a country name...",
+    memoryGiveUp: "🏳️ Give up", memoryGiveUpConfirm: "Sure? You'll see every country you missed.",
+    memoryHintSolve: "🎲 Solve one", memoryHintLetter: "🔤 Letter", memoryHintFlag: "🏳️ Flag",
+    memoryHintLetterMsg: n => `Hint: one country starts with "${n}"`,
+    memoryBestTime: t => `Best time: ${t}`,
+    memoryDoneTitle: "Bravo! You got them all", memoryDoneTime: t => `in ${t}`,
+    memoryGaveUpTitle: n => `You stopped after getting ${n}`,
 
     speedNormal: "🛡️ Normal", speedNormalDesc: "3 attempts per region, untimed",
     speedBullet: "⚡ Bullet", speedBulletDesc: "Most consecutive correct answers in a time limit — one mistake ends the round",
@@ -1236,46 +1325,7 @@ function t() { return STR[LANG]; }
 function nameOf(c) { return LANG === "ar" ? c.ar : c.en; }
 function capOf(c) { return LANG === "ar" ? c.capAr : c.capEn; }
 function contName(cont) { return LANG === "ar" ? cont.ar : cont.en; }
-// Two independent providers, in case one is down or blocked for the
-// player's network. jsdelivr/flag-icons is a completely separate host
-// from flagcdn, so an outage on one rarely takes down both.
-const FLAG_SOURCES = [
-  code => `https://flagcdn.com/w320/${code}.png`,
-  code => `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7/flags/4x3/${code}.svg`,
-];
-function flagUrl(code) { return FLAG_SOURCES[0](code); }
-
-// A small inline SVG (country-code lettering on a plain tile) used only
-// when every real flag provider has failed — keeps the layout intact
-// instead of showing a broken-image icon.
-function flagPlaceholderSrc(code) {
-  const label = code.toUpperCase();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120">`
-    + `<rect width="160" height="120" fill="#1a2c47"/>`
-    + `<text x="80" y="68" font-family="Tahoma,sans-serif" font-size="30" font-weight="700" fill="#e6c368" text-anchor="middle">${label}</text>`
-    + `</svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
-// Sets an <img>'s flag, falling back to the next provider on error, and
-// finally to flagPlaceholderSrc() so a network hiccup shows a readable
-// country code instead of a broken-image icon.
-function setFlagSrc(imgEl, code, altText) {
-  imgEl.alt = altText || '';
-  imgEl.classList.remove('flag-fallback');
-  let attempt = 0;
-  imgEl.onerror = () => {
-    attempt++;
-    if (attempt < FLAG_SOURCES.length) {
-      imgEl.src = FLAG_SOURCES[attempt](code);
-    } else {
-      imgEl.onerror = null;
-      imgEl.classList.add('flag-fallback');
-      imgEl.src = flagPlaceholderSrc(code);
-    }
-  };
-  imgEl.src = FLAG_SOURCES[0](code);
-}
+function flagUrl(code) { return `https://flagcdn.com/w320/${code}.png`; }
 
 // Bumped every time renderRound() sets up a new flag; lets an in-flight
 // crop pick from a previous, already-abandoned question detect that it's
@@ -1296,7 +1346,7 @@ function applyRandomCrop(code, requestId) {
     const scale = (2.2 + Math.random() * 1.2).toFixed(2);
     const posX = Math.round(10 + Math.random() * 80);
     const posY = Math.round(10 + Math.random() * 80);
-    setFlagSrc(flagImg, code, flagImg.alt);
+    flagImg.src = flagUrl(code);
     flagImg.style.transform = `scale(${scale})`;
     flagImg.style.objectPosition = `${posX}% ${posY}%`;
   };
@@ -1401,7 +1451,7 @@ function lightNormalize(str) {
    Progress & scores. Everything below lives in memory only for the
    current page load — no localStorage, so a refresh clears it.
    --------------------------------------------------------------------- */
-const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set(), zoom: new Set() };
+const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set(), zoom: new Set(), memory: new Set() };
 const highScores = {};
 const sessionHistory = []; // one entry per finished round, most recent last
 
@@ -1473,6 +1523,7 @@ const livesDisplay = document.getElementById('livesDisplay');
 const timerDisplay = document.getElementById('timerDisplay');
 const sessionScoreLabelEl = document.getElementById('sessionScoreLabel');
 const sessionScoreEl = document.getElementById('sessionScore');
+const stage = document.getElementById('stage');
 const countryLabel = document.getElementById('countryLabel');
 const flagFrame = document.getElementById('flagFrame');
 const mapWrap = document.getElementById('mapWrap');
@@ -1494,6 +1545,18 @@ const studyControls = document.getElementById('studyControls');
 const studyPrevBtn = document.getElementById('studyPrevBtn');
 const studyNextBtn = document.getElementById('studyNextBtn');
 const studyPosition = document.getElementById('studyPosition');
+
+const memoryWrap = document.getElementById('memoryWrap');
+const memoryProgressEl = document.getElementById('memoryProgress');
+const memoryTimerEl = document.getElementById('memoryTimer');
+const memoryGridEl = document.getElementById('memoryGrid');
+const memoryHintSolveBtn = document.getElementById('memoryHintSolveBtn');
+const memoryHintLetterBtn = document.getElementById('memoryHintLetterBtn');
+const memoryHintFlagBtn = document.getElementById('memoryHintFlagBtn');
+const memoryHintMsg = document.getElementById('memoryHintMsg');
+const memoryInput = document.getElementById('memoryInput');
+const memorySubmitBtn = document.getElementById('memorySubmit');
+const memoryGiveUpBtn = document.getElementById('memoryGiveUpBtn');
 
 const endIcon = document.getElementById('endIcon');
 const finalScore = document.getElementById('finalScore');
@@ -1589,6 +1652,7 @@ function renderCategoryScreen() {
     { id: 'zoom',     label: t().categoryZoom,      desc: t().categoryZoomDesc },
     { id: 'capitals', label: t().categoryCapitals, desc: t().categoryCapitalsDesc },
     { id: 'maps',     label: t().categoryMaps,     desc: t().categoryMapsDesc },
+    { id: 'memory',   label: t().categoryMemory,   desc: t().categoryMemoryDesc },
   ];
   categoryGrid.innerHTML = '';
   cats.forEach(c => {
@@ -1602,6 +1666,12 @@ function renderCategoryScreen() {
 function chooseCategory(id) {
   selectedCategory = id;
   screenStack = [];
+  if (id === 'memory') {
+    selectedSpeed = 'memory'; // not a real "speed", just keeps other code paths (isBullet etc.) from misfiring
+    renderFormatScreen();
+    navTo(formatScreen);
+    return;
+  }
   renderSpeedScreen();
   navTo(speedScreen);
 }
@@ -1680,6 +1750,11 @@ function renderFormatScreen() {
       { id: 'flag_choice_crop', label: t().formatChoiceCrop, desc: t().formatChoiceCropDesc },
       { id: 'flag_type_crop',   label: t().formatTypeCrop,   desc: t().formatTypeCropDesc },
     ];
+  } else if (selectedCategory === 'memory') {
+    options = [
+      { id: 'memory_country', label: t().memoryTargetCountry, desc: t().memoryTargetCountryDesc },
+      { id: 'memory_capital', label: t().memoryTargetCapital, desc: t().memoryTargetCapitalDesc },
+    ];
   } else {
     const prefix = selectedCategory === 'flags' ? 'flag' : 'cap';
     options = [
@@ -1705,13 +1780,21 @@ function renderContinentScreen() {
 
   continentGrid.innerHTML = '';
 
-  const worldBest = highScores[highScoreKey(null)] || 0;
+  function bestLine(key) {
+    if (isMemoryMode()) {
+      const time = memoryBestTimes[memoryBestKey(key)];
+      return time === undefined ? t().memoryBestTime('—') : t().memoryBestTime(formatMemoryTime(time));
+    }
+    const best = highScores[highScoreKey(key)] || 0;
+    return selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best);
+  }
+
   const worldCard = document.createElement('button');
   worldCard.className = 'continent-card world';
   worldCard.innerHTML = `
     <div class="cc-top"><span class="cc-emoji">🌐</span><span class="cc-name">${t().world}</span></div>
     <div class="cc-count">${knownSet.size} / ${countries.length} ${t().knownSuffix}</div>
-    <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(worldBest) : t().best(worldBest)}</div>
+    <div class="cc-best">${bestLine(null)}</div>
     <div class="bar-track"><div class="bar-fill" style="width:${(knownSet.size/countries.length)*100}%"></div></div>
   `;
   worldCard.addEventListener('click', () => startGame(null));
@@ -1720,13 +1803,12 @@ function renderContinentScreen() {
   CONTINENTS.forEach(cont => {
     const total = countInContinent(cont.key);
     const known = knownInContinent(cont.key);
-    const best = highScores[highScoreKey(cont.key)] || 0;
     const card = document.createElement('button');
     card.className = 'continent-card';
     card.innerHTML = `
       <div class="cc-top"><span class="cc-emoji">${cont.emoji}</span><span class="cc-name">${contName(cont)}</span></div>
       <div class="cc-count">${known} / ${total} ${t().knownSuffix}</div>
-      <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best)}</div>
+      <div class="cc-best">${bestLine(cont.key)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(known/total)*100}%"></div></div>
     `;
     card.addEventListener('click', () => startGame(cont.key));
@@ -1738,13 +1820,12 @@ function renderContinentScreen() {
   BLOCS.forEach(bloc => {
     const total = countInContinent(bloc.key);
     const known = knownInContinent(bloc.key);
-    const best = highScores[highScoreKey(bloc.key)] || 0;
     const card = document.createElement('button');
     card.className = 'continent-card';
     card.innerHTML = `
       <div class="cc-top"><span class="cc-emoji">${bloc.emoji}</span><span class="cc-name">${regionLabel(bloc.key)}</span></div>
       <div class="cc-count">${known} / ${total} ${t().knownSuffix}</div>
-      <div class="cc-best">${selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best)}</div>
+      <div class="cc-best">${bestLine(bloc.key)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(known/total)*100}%"></div></div>
     `;
     card.addEventListener('click', () => startGame(bloc.key));
@@ -1789,6 +1870,7 @@ function isCropMode() { return currentMode === 'flag_choice_crop' || currentMode
 // Hint is only offered for the flags/capitals categories in normal speed —
 // bullet has no room for it, practice/study already have no real penalty.
 function canHint() { return !isMapMode() && !isStudyMode() && selectedSpeed === 'normal'; }
+function isMemoryMode() { return currentMode === 'memory_country' || currentMode === 'memory_capital'; }
 
 let bulletTimerHandle = null;
 let bulletRemaining = 0;
@@ -1818,6 +1900,9 @@ function startBulletTimer() {
 function startGame(continentKey) {
   stopBulletTimer();
   currentContinentKey = continentKey;
+
+  if (isMemoryMode()) { startMemoryGame(continentKey); return; }
+
   pool = regionCountries(continentKey);
   if (isMapMode()) pool = pool.filter(c => mapDataByCode[c.code] || MARKER_POINTS[c.code]);
 
@@ -1828,6 +1913,9 @@ function startGame(continentKey) {
   missedThisRound = [];
 
   navTo(gameArea);
+  memoryWrap.classList.add('hidden');
+  stage.classList.remove('hidden');
+  promptLabel.classList.remove('hidden');
 
   const study = isStudyMode();
   topRow.classList.toggle('hidden', study);
@@ -1856,6 +1944,245 @@ function startGame(continentKey) {
 
   renderRound();
 }
+
+/* ---------------------------------------------------------------------
+   Memory mode — type every country in the region, watch its flag
+   appear in the grid as you go. No lives, no round timer pressure
+   beyond a stopwatch; the "score" is how fast you clear the whole set.
+   --------------------------------------------------------------------- */
+let memoryPool = [];
+let memoryBoxes = [];          // one entry per grid slot: null | { code, revealed: 'flag' | 'full' }
+let memorySolvedCount = 0;
+let memoryElapsed = 0;
+let memoryTimerHandle = null;
+let memoryHintUsed = { solve: false, letter: false, flag: false };
+const memoryBestTimes = {};    // lower is better, tracked separately from the normal highScores
+
+function memoryBestKey(continentKey) {
+  const cont = continentKey || 'world';
+  return `${currentMode}|${cont}`;
+}
+function formatMemoryTime(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60), s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Small Levenshtein (edit-distance) implementation — lets us accept
+// light typos ("امركا" for "امريكا") without accepting wrong-country
+// guesses that merely start with similar letters.
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+// Allowed typo budget scales gently with word length, so short names
+// stay strict (no accidental cross-matches) while longer ones forgive
+// a missing/extra letter or two.
+function typoBudget(len) { return len <= 4 ? 0 : (len <= 8 ? 1 : 2); }
+
+function memoryTargetText(c) { return currentMode === 'memory_capital' ? capOf(c) : nameOf(c); }
+
+function startMemoryGame(continentKey) {
+  memoryPool = shuffle(regionCountries(continentKey)); // shuffle just for hint randomness; box order is fill-order, not this order
+  memoryBoxes = new Array(memoryPool.length).fill(null);
+  memorySolvedCount = 0;
+  memoryElapsed = 0;
+  memoryHintUsed = { solve: false, letter: false, flag: false };
+
+  navTo(gameArea);
+  stage.classList.add('hidden');
+  promptLabel.classList.add('hidden');
+  choicesEl.classList.add('hidden');
+  typeWrap.classList.add('hidden');
+  footRow.classList.add('hidden');
+  studyControls.classList.add('hidden');
+  topRow.classList.add('hidden');
+  memoryWrap.classList.remove('hidden');
+
+  memoryHintMsg.classList.add('hidden');
+  [memoryHintSolveBtn, memoryHintLetterBtn, memoryHintFlagBtn].forEach(b => b.disabled = false);
+  memoryInput.value = '';
+  memoryInput.disabled = false;
+
+  renderMemoryGrid();
+  updateMemoryProgress();
+  startMemoryTimer();
+  setTimeout(() => memoryInput.focus(), 50);
+}
+
+function startMemoryTimer() {
+  stopMemoryTimer();
+  memoryTimerHandle = setInterval(() => {
+    memoryElapsed++;
+    memoryTimerEl.textContent = `⏱️ ${formatMemoryTime(memoryElapsed)}`;
+  }, 1000);
+}
+function stopMemoryTimer() {
+  if (memoryTimerHandle) { clearInterval(memoryTimerHandle); memoryTimerHandle = null; }
+}
+
+function updateMemoryProgress() {
+  memoryProgressEl.innerHTML = t().memoryProgress(`<b>${memorySolvedCount}</b>`, memoryPool.length);
+}
+
+function renderMemoryGrid() {
+  memoryGridEl.innerHTML = '';
+  memoryBoxes.forEach(entry => {
+    const box = document.createElement('div');
+    box.className = 'memory-box';
+    if (entry) {
+      const c = countries.find(x => x.code === entry.code);
+      box.classList.add(entry.revealed === 'full' ? 'solved' : 'pending');
+      box.innerHTML = `<img src="${flagUrl(entry.code)}" alt="${nameOf(c)}">`;
+      if (entry.revealed === 'full') {
+        const label = document.createElement('div');
+        label.className = 'memory-box-label';
+        label.textContent = nameOf(c);
+        box.appendChild(label);
+      }
+    }
+    memoryGridEl.appendChild(box);
+  });
+}
+
+// Marks one country fully solved: if it already has a pending
+// (flag-only, from the "show flag" hint) box, that same box gets
+// upgraded in place; otherwise it takes the next empty slot.
+function completeMemoryCountry(code) {
+  let idx = memoryBoxes.findIndex(b => b && b.code === code && b.revealed === 'flag');
+  if (idx === -1) idx = memoryBoxes.findIndex(b => b === null);
+  if (idx === -1) return;
+  memoryBoxes[idx] = { code, revealed: 'full' };
+  memorySolvedCount++;
+  categoryKnownSet().add(code);
+  renderMemoryGrid();
+  updateMemoryProgress();
+
+  if (memorySolvedCount >= memoryPool.length) endMemoryGame(true);
+}
+
+function unsolvedMemoryCountries() {
+  const solvedCodes = new Set(memoryBoxes.filter(Boolean).filter(b => b.revealed === 'full').map(b => b.code));
+  return memoryPool.filter(c => !solvedCodes.has(c.code));
+}
+
+function memorySubmitGuess() {
+  const raw = memoryInput.value;
+  if (!raw.trim()) return;
+  const query = normalize(raw);
+  const candidates = unsolvedMemoryCountries();
+
+  let best = null, bestDist = Infinity;
+  candidates.forEach(c => {
+    const target = normalize(memoryTargetText(c));
+    const d = levenshtein(query, target);
+    if (d < bestDist) { bestDist = d; best = c; }
+  });
+
+  if (best && bestDist <= typoBudget(normalize(memoryTargetText(best)).length)) {
+    completeMemoryCountry(best.code);
+    memoryInput.value = '';
+  } else {
+    memoryInput.classList.add('shake');
+    setTimeout(() => memoryInput.classList.remove('shake'), 300);
+  }
+}
+memorySubmitBtn.addEventListener('click', memorySubmitGuess);
+memoryInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') memorySubmitGuess(); });
+
+function pickRandomUnsolved(excludePending) {
+  let pool = unsolvedMemoryCountries();
+  if (excludePending) {
+    const pendingCodes = new Set(memoryBoxes.filter(Boolean).filter(b => b.revealed === 'flag').map(b => b.code));
+    pool = pool.filter(c => !pendingCodes.has(c.code));
+  }
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+memoryHintSolveBtn.addEventListener('click', () => {
+  if (memoryHintUsed.solve) return;
+  const target = pickRandomUnsolved(false);
+  if (!target) return;
+  memoryHintUsed.solve = true;
+  memoryHintSolveBtn.disabled = true;
+  completeMemoryCountry(target.code);
+});
+
+memoryHintLetterBtn.addEventListener('click', () => {
+  if (memoryHintUsed.letter) return;
+  const target = pickRandomUnsolved(false);
+  if (!target) return;
+  memoryHintUsed.letter = true;
+  memoryHintLetterBtn.disabled = true;
+  const letter = memoryTargetText(target).charAt(0);
+  memoryHintMsg.textContent = t().memoryHintLetterMsg(letter);
+  memoryHintMsg.classList.remove('hidden');
+});
+
+memoryHintFlagBtn.addEventListener('click', () => {
+  if (memoryHintUsed.flag) return;
+  const target = pickRandomUnsolved(true);
+  if (!target) return;
+  memoryHintUsed.flag = true;
+  memoryHintFlagBtn.disabled = true;
+  const idx = memoryBoxes.findIndex(b => b === null);
+  if (idx === -1) return;
+  memoryBoxes[idx] = { code: target.code, revealed: 'flag' };
+  renderMemoryGrid();
+});
+
+memoryGiveUpBtn.addEventListener('click', () => {
+  if (!confirm(t().memoryGiveUpConfirm)) return;
+  endMemoryGame(false);
+});
+
+function endMemoryGame(completed) {
+  stopMemoryTimer();
+  memoryInput.disabled = true;
+
+  if (completed) {
+    const key = memoryBestKey(currentContinentKey);
+    if (!(key in memoryBestTimes) || memoryElapsed < memoryBestTimes[key]) memoryBestTimes[key] = memoryElapsed;
+  }
+
+  sessionHistory.push({
+    category: selectedCategory,
+    mode: currentMode,
+    speed: 'memory',
+    continentKey: currentContinentKey,
+    reason: completed ? 'cleared' : 'lost',
+    correct: memorySolvedCount,
+    total: memoryPool.length,
+    missedCodes: completed ? [] : unsolvedMemoryCountries().map(c => c.code),
+  });
+
+  endIcon.textContent = completed ? '🏆' : '🏳️';
+  finalScore.textContent = formatMemoryTime(memoryElapsed);
+  finalOf.textContent = t().memoryProgress(memorySolvedCount, memoryPool.length);
+  finalMsg.textContent = completed ? t().memoryDoneTitle : t().memoryGaveUpTitle(memorySolvedCount);
+
+  renderMissedListFromCodes(completed ? [] : unsolvedMemoryCountries());
+  renderProgressList();
+
+  progressTitle.textContent = t().updatedProgress;
+  restartBtn.textContent = t().playAgain;
+  changeModeBtn.textContent = t().changeMode;
+  menuBtn.textContent = t().menu;
+
+  navTo(endScreen);
+}
+
 
 /* ---------------------------------------------------------------------
    Map rendering
@@ -2221,7 +2548,7 @@ function renderRound() {
   if (isCropMode()) {
     applyRandomCrop(currentCorrect.code, cropRequestId);
   } else {
-    setFlagSrc(flagImg, currentCorrect.code, nameOf(currentCorrect));
+    flagImg.src = flagUrl(currentCorrect.code);
     flagImg.style.transform = 'none';
     flagImg.style.objectPosition = 'center';
   }
@@ -2314,7 +2641,8 @@ function renderStudyRound() {
     return;
   }
 
-  setFlagSrc(flagImg, c.code, nameOf(c));
+  flagImg.src = flagUrl(c.code);
+  flagImg.alt = nameOf(c);
   mapTargetName.classList.add('hidden');
   countryLabel.classList.remove('hidden');
   countryLabel.textContent = nameOf(c);
@@ -2529,18 +2857,22 @@ function renderEndScreen(reason) {
 }
 
 function renderMissedList() {
-  if (!missedThisRound.length) { missedList.classList.add('hidden'); return; }
+  renderMissedListFromCodes(missedThisRound);
+}
+function renderMissedListFromCodes(list) {
+  if (!list.length) { missedList.classList.add('hidden'); return; }
   missedList.classList.remove('hidden');
   missedTitleEl.textContent = t().missedTitle;
   missedChips.innerHTML = '';
-  missedThisRound.forEach(c => missedChips.appendChild(buildCountryChip(c)));
+  list.forEach(c => missedChips.appendChild(buildCountryChip(c)));
 }
 
 function buildCountryChip(c) {
   const chip = document.createElement('div');
   chip.className = 'missed-chip';
   const img = document.createElement('img');
-  setFlagSrc(img, c.code, nameOf(c));
+  img.src = flagUrl(c.code);
+  img.alt = nameOf(c);
   const span = document.createElement('span');
   span.textContent = nameOf(c);
   chip.appendChild(img);
@@ -2595,12 +2927,14 @@ function categoryLabel(category) {
   if (category === 'flags') return t().categoryFlags;
   if (category === 'zoom') return t().categoryZoom;
   if (category === 'capitals') return t().categoryCapitals;
+  if (category === 'memory') return t().categoryMemory;
   return t().categoryMaps;
 }
 function speedLabel(speed) {
   if (speed === 'bullet') return t().speedBullet;
   if (speed === 'practice') return t().speedPractice;
   if (speed === 'study') return t().speedStudy;
+  if (speed === 'memory') return '';
   return t().speedNormal;
 }
 function continentLabel(key) {
@@ -2638,7 +2972,9 @@ function renderHistoryScreen() {
 
     const top = document.createElement('div');
     top.className = 'history-row-top';
-    top.innerHTML = `<span class="hr-title">${categoryLabel(entry.category)} · ${speedLabel(entry.speed)}</span><span class="hr-result">${resultText}</span>`;
+    const speedPart = speedLabel(entry.speed);
+    const titleText = speedPart ? `${categoryLabel(entry.category)} · ${speedPart}` : categoryLabel(entry.category);
+    top.innerHTML = `<span class="hr-title">${titleText}</span><span class="hr-result">${resultText}</span>`;
     row.appendChild(top);
 
     const meta = document.createElement('div');
