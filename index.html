@@ -1326,6 +1326,32 @@ function nameOf(c) { return LANG === "ar" ? c.ar : c.en; }
 function capOf(c) { return LANG === "ar" ? c.capAr : c.capEn; }
 function contName(cont) { return LANG === "ar" ? cont.ar : cont.en; }
 function flagUrl(code) { return `https://flagcdn.com/w320/${code}.png`; }
+// Second source, on a different CDN entirely — used automatically if the
+// primary flag image fails to load (blocked network, ad blocker, outage).
+function flagUrlFallback(code) { return `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/flags/4x3/${code}.svg`; }
+// Last resort if BOTH sources fail — a neutral placeholder that never
+// reveals anything, so a broken image can never hand out the answer.
+const FLAG_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3">' +
+  '<rect width="4" height="3" fill="#0d1c30"/>' +
+  '<text x="2" y="2.05" font-size="1.3" text-anchor="middle" fill="#c9a24b">🏳️</text>' +
+  '</svg>'
+);
+// Wires an <img> to fall through flagcdn → jsdelivr → neutral placeholder
+// on load failure. `revealAnswer` controls the alt text: while a flag is
+// still being guessed, alt must NOT contain the country's name (screen
+// readers / a failed image would otherwise hand out the answer).
+function setFlagImage(imgEl, code, revealAnswer) {
+  const country = countries.find(c => c.code === code);
+  imgEl.alt = revealAnswer && country ? nameOf(country) : (LANG === 'ar' ? 'علم دولة' : 'Country flag');
+  let stage = 0;
+  imgEl.onerror = () => {
+    stage++;
+    if (stage === 1) imgEl.src = flagUrlFallback(code);
+    else if (stage === 2) imgEl.src = FLAG_PLACEHOLDER;
+  };
+  imgEl.src = flagUrl(code);
+}
 
 // Bumped every time renderRound() sets up a new flag; lets an in-flight
 // crop pick from a previous, already-abandoned question detect that it's
@@ -1346,17 +1372,18 @@ function applyRandomCrop(code, requestId) {
     const scale = (2.2 + Math.random() * 1.2).toFixed(2);
     const posX = Math.round(10 + Math.random() * 80);
     const posY = Math.round(10 + Math.random() * 80);
-    flagImg.src = flagUrl(code);
+    setFlagImage(flagImg, code, false);
     flagImg.style.transform = `scale(${scale})`;
     flagImg.style.objectPosition = `${posX}% ${posY}%`;
   };
 
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    if (requestId !== cropRequestId) return;
-    try {
-      const canvas = document.createElement('canvas');
+  const tryLoad = (url, isLastAttempt) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (requestId !== cropRequestId) return;
+      try {
+        const canvas = document.createElement('canvas');
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
@@ -1392,14 +1419,19 @@ function applyRandomCrop(code, requestId) {
       flagImg.style.transform = 'none';
       flagImg.style.objectPosition = 'center';
       flagImg.src = out.toDataURL();
-    } catch (err) {
-      // Tainted canvas (e.g. a CORS hiccup) or any other failure —
-      // fall back to the old blind random crop rather than breaking the round.
-      fallback();
-    }
+      } catch (err) {
+        // Tainted canvas (e.g. a CORS hiccup) or any other failure —
+        // fall back to the old blind random crop rather than breaking the round.
+        fallback();
+      }
+    };
+    img.onerror = () => {
+      if (isLastAttempt) fallback();
+      else tryLoad(flagUrlFallback(code), true);
+    };
+    img.src = url;
   };
-  img.onerror = fallback;
-  img.src = flagUrl(code);
+  tryLoad(flagUrl(code), false);
 }
 
 function shuffle(arr) {
@@ -2042,9 +2074,12 @@ function renderMemoryGrid() {
     box.className = 'memory-box';
     if (entry) {
       const c = countries.find(x => x.code === entry.code);
-      box.classList.add(entry.revealed === 'full' ? 'solved' : 'pending');
-      box.innerHTML = `<img src="${flagUrl(entry.code)}" alt="${nameOf(c)}">`;
-      if (entry.revealed === 'full') {
+      const solved = entry.revealed === 'full';
+      box.classList.add(solved ? 'solved' : 'pending');
+      const img = document.createElement('img');
+      setFlagImage(img, entry.code, solved); // pending (flag-only hint) boxes must not leak the name via alt
+      box.appendChild(img);
+      if (solved) {
         const label = document.createElement('div');
         label.className = 'memory-box-label';
         label.textContent = nameOf(c);
@@ -2535,7 +2570,6 @@ function renderRound() {
     return;
   }
 
-  flagImg.alt = nameOf(currentCorrect);
   mapTargetName.classList.add('hidden');
 
   // Snippet mode: show only a random zoomed-in piece of the flag,
@@ -2543,12 +2577,13 @@ function renderRound() {
   // window is picked by applyRandomCrop() below, which avoids landing on
   // a flat single-color area (several flags share plain white/red/etc.
   // bands, which would make the snippet unguessable).
+  flagImg.alt = LANG === 'ar' ? 'علم دولة' : 'Country flag'; // never the real name — an image load failure must not hand out the answer
   flagFrame.classList.toggle('cropped', isCropMode());
   cropRequestId++;
   if (isCropMode()) {
     applyRandomCrop(currentCorrect.code, cropRequestId);
   } else {
-    flagImg.src = flagUrl(currentCorrect.code);
+    setFlagImage(flagImg, currentCorrect.code, false);
     flagImg.style.transform = 'none';
     flagImg.style.objectPosition = 'center';
   }
@@ -2641,8 +2676,7 @@ function renderStudyRound() {
     return;
   }
 
-  flagImg.src = flagUrl(c.code);
-  flagImg.alt = nameOf(c);
+  setFlagImage(flagImg, c.code, true);
   mapTargetName.classList.add('hidden');
   countryLabel.classList.remove('hidden');
   countryLabel.textContent = nameOf(c);
@@ -2871,8 +2905,7 @@ function buildCountryChip(c) {
   const chip = document.createElement('div');
   chip.className = 'missed-chip';
   const img = document.createElement('img');
-  img.src = flagUrl(c.code);
-  img.alt = nameOf(c);
+  setFlagImage(img, c.code, true);
   const span = document.createElement('span');
   span.textContent = nameOf(c);
   chip.appendChild(img);
