@@ -76,7 +76,7 @@
   .top-controls-side { display: flex; gap: 0.375rem; }
   .back-btn, .lang-btn, .icon-btn {
     background: none; border: 1px solid var(--line); color: var(--parchment);
-    font-size: 0.75rem; padding: 0.5rem 10px; border-radius: 0.375rem; cursor: pointer; font-family: inherit;
+    font-size: 0.75rem; padding: 0.5rem 10px; border-radius: 999px; cursor: pointer; font-family: inherit;
     min-height: 2.25rem;
   }
   .back-btn:hover, .lang-btn:hover, .icon-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
@@ -84,17 +84,17 @@
     letter-spacing: 0.25rem; font-size: 0.6875rem; color: var(--gold); text-transform: uppercase;
     margin-bottom: 6px; font-weight: 600;
   }
-  h1 { font-family: 'Georgia', 'Amiri', serif; font-size: clamp(22px, 6vw, 28px); margin: 0; color: var(--parchment); letter-spacing: 0.0625rem; }
+  h1 { font-family: 'Georgia', 'Amiri', serif; font-weight: 800; font-size: clamp(22px, 6vw, 28px); margin: 0; color: var(--parchment); letter-spacing: 0.0625rem; }
 
   .world-progress { margin-bottom: 18px; }
   .world-progress .wp-label {
     display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(244,236,216,0.65); margin-bottom: 6px;
   }
   .world-progress .wp-label b { color: var(--gold-bright); }
-  .bar-track { height: 8px; border-radius: 0.25rem; background: rgba(244,236,216,0.08); overflow: hidden; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 0.25rem; transition: width 0.4s ease; }
+  .bar-track { height: 8px; border-radius: 999px; background: rgba(244,236,216,0.08); overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--stamp-red), var(--gold), var(--green)); border-radius: 999px; transition: width 0.4s ease; }
 
-  .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+  .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
   .section-divider {
     text-align: center; font-size: 0.75rem; color: rgba(244,236,216,0.45);
     margin: 1.25rem 0 0.75rem; letter-spacing: 0.03125rem;
@@ -103,21 +103,50 @@
   .section-divider::before, .section-divider::after {
     content: ""; flex: 1; height: 1px; background: var(--line);
   }
+  /* Modern card style: bold rounded corners, a distinct gradient tint
+     per card (cycling through the four brand colors), a soft shadow,
+     and a gentle scale-up on hover/active instead of a flat color swap. */
   .continent-card, .mode-card {
-    background: rgba(244,236,216,0.04); border: 1px solid var(--line); border-radius: 0.625rem;
-    padding: 0.875rem 12px; text-align: right; cursor: pointer; font-family: inherit; color: var(--parchment);
-    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    background: rgba(244,236,216,0.04); border: 1px solid var(--line); border-radius: 1.25rem;
+    padding: 1rem 14px; text-align: right; cursor: pointer; font-family: inherit; color: var(--parchment);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     min-height: 2.75rem;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+    position: relative;
+  }
+  .continent-card:nth-of-type(4n+1), .mode-card:nth-of-type(4n+1) {
+    background: linear-gradient(135deg, rgba(163,55,44,0.34), rgba(163,55,44,0.05) 70%);
+  }
+  .continent-card:nth-of-type(4n+2), .mode-card:nth-of-type(4n+2) {
+    background: linear-gradient(135deg, rgba(76,153,90,0.32), rgba(76,153,90,0.05) 70%);
+  }
+  .continent-card:nth-of-type(4n+3), .mode-card:nth-of-type(4n+3) {
+    background: linear-gradient(135deg, rgba(201,162,75,0.32), rgba(201,162,75,0.05) 70%);
+  }
+  .continent-card:nth-of-type(4n), .mode-card:nth-of-type(4n) {
+    background: linear-gradient(135deg, rgba(30,54,92,0.85), rgba(10,22,38,0.5) 70%);
   }
   html[dir="ltr"] .continent-card, html[dir="ltr"] .mode-card { text-align: left; }
-  .continent-card:hover, .mode-card:hover { background: rgba(201,162,75,0.1); border-color: var(--gold); }
+  .continent-card:hover, .mode-card:hover {
+    border-color: var(--gold); transform: scale(1.02);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.4);
+  }
   .continent-card:active, .mode-card:active { transform: scale(0.98); }
-  .continent-card.world { grid-column: 1 / -1; text-align: center; background: rgba(201,162,75,0.08); }
+  .continent-card.world {
+    grid-column: 1 / -1; text-align: center;
+    background: linear-gradient(135deg, rgba(201,162,75,0.28), rgba(30,54,92,0.4) 70%);
+  }
   .mode-card { grid-column: 1 / -1; text-align: center; }
+  .mode-card.cat-card { grid-column: auto; }
+  .mode-card.cat-card-wide { grid-column: 1 / -1; }
   .cc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .continent-card.world .cc-top, .mode-card .cc-top { justify-content: center; gap: 0.625rem; }
-  .cc-emoji { font-size: 1.25rem; }
-  .cc-name { font-weight: 700; font-size: 0.875rem; }
+  .cc-emoji {
+    font-size: 1.375rem; display: inline-flex; align-items: center; justify-content: center;
+    width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(255,255,255,0.14);
+    flex-shrink: 0;
+  }
+  .cc-name { font-weight: 800; font-size: 0.875rem; }
   .cc-count { font-size: 0.6875rem; color: rgba(244,236,216,0.55); margin-top: 4px; }
   .cc-best { font-size: 0.6875rem; color: var(--gold-bright); margin-top: 2px; }
   .continent-card .bar-track { height: 5px; margin-top: 8px; }
@@ -133,9 +162,10 @@
   .session-score b { color: var(--gold-bright); font-size: 1rem; }
 
   .stage {
-    background: rgba(244,236,216,0.03); border: 1px solid var(--line); border-radius: 0.625rem;
+    background: rgba(244,236,216,0.03); border: 1px solid var(--line); border-radius: 1.25rem;
     padding: 1rem 14px; text-align: center; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 0.625rem; min-height: 10.625rem;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.28);
   }
   .country-label { font-size: 1.125rem; font-weight: 700; color: var(--gold-bright); }
   .flag-frame {
@@ -199,7 +229,7 @@
   .type-input:focus { outline: none; border-color: var(--gold); }
   .type-submit {
     background: var(--gold); color: var(--navy-deep); border: none; padding: 0 18px;
-    border-radius: 0.5rem; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8125rem;
+    border-radius: 999px; font-weight: 800; cursor: pointer; font-family: inherit; font-size: 0.8125rem;
     min-height: 2.875rem; min-width: 64px;
   }
   .type-submit:hover { background: var(--gold-bright); }
@@ -207,8 +237,8 @@
 
   .foot-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
   .next-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 24px; border-radius: 0.4375rem;
-    font-weight: 700; font-size: 0.875rem; cursor: pointer; font-family: inherit;
+    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 24px; border-radius: 999px;
+    font-weight: 800; font-size: 0.875rem; cursor: pointer; font-family: inherit;
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
     min-height: 2.875rem;
   }
@@ -217,7 +247,7 @@
 
   .hint-btn {
     background: none; border: 1px solid var(--gold); color: var(--gold-bright);
-    padding: 0.75rem 1.1rem; border-radius: 0.4375rem;
+    padding: 0.75rem 1.1rem; border-radius: 999px;
     font-weight: 700; font-size: 0.8125rem; cursor: pointer; font-family: inherit;
     min-height: 2.875rem;
   }
@@ -254,11 +284,11 @@
 
   .end-buttons { display: flex; gap: 0.625rem; justify-content: center; flex-wrap: wrap; }
   .restart-btn, .menu-btn {
-    padding: 0.75rem 18px; border-radius: 0.4375rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    padding: 0.75rem 18px; border-radius: 999px; font-weight: 800; cursor: pointer; font-family: inherit;
     font-size: 0.8125rem; border: 1px solid var(--gold); min-height: 2.75rem;
   }
-  .restart-btn { background: var(--gold); color: var(--navy-deep); border: none; }
-  .restart-btn:hover { background: var(--gold-bright); }
+  .restart-btn { background: var(--stamp-red); color: var(--parchment); border: none; }
+  .restart-btn:hover { background: #b8483c; }
   .menu-btn { background: transparent; color: var(--gold-bright); }
   .menu-btn:hover { background: rgba(201,162,75,0.1); }
 
@@ -308,8 +338,8 @@
     display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 0.5rem;
   }
   .study-nav-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 16px; border-radius: 0.4375rem;
-    font-weight: 700; font-size: 0.8125rem; cursor: pointer; font-family: inherit; min-height: 2.875rem;
+    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 16px; border-radius: 999px;
+    font-weight: 800; font-size: 0.8125rem; cursor: pointer; font-family: inherit; min-height: 2.875rem;
   }
   .study-nav-btn:hover { background: var(--gold-bright); }
   .study-position { font-size: 0.75rem; color: rgba(244,236,216,0.6); white-space: nowrap; }
@@ -733,6 +763,31 @@ const countries = [
   {code:"to",cont:"oceania",ar:"تونغا",en:"Tonga",capAr:"نوكوعالوفا",capEn:"Nuku'alofa"},
   {code:"tv",cont:"oceania",ar:"توفالو",en:"Tuvalu",capAr:"فونافوتي",capEn:"Funafuti"},
   {code:"vu",cont:"oceania",ar:"فانواتو",en:"Vanuatu",capAr:"بورت فيلا",capEn:"Port Vila"},
+  // ===== كيانات/أقاليم غير أعضاء بالأمم المتحدة (مدموجة مع القارات) =====
+  {code:"hk",cont:"asia",ar:"هونج كونج",en:"Hong Kong",capAr:"هونج كونج",capEn:"Hong Kong"},
+  {code:"mo",cont:"asia",ar:"ماكاو",en:"Macau",capAr:"ماكاو",capEn:"Macau"},
+  {code:"eh",cont:"africa",ar:"الصحراء الغربية",en:"Western Sahara",capAr:"العيون",capEn:"Laayoune"},
+  {code:"sct",cont:"europe",ar:"اسكتلندا",en:"Scotland",capAr:"إدنبرة",capEn:"Edinburgh"},
+  {code:"eng",cont:"europe",ar:"إنجلترا",en:"England",capAr:"لندن",capEn:"London"},
+  {code:"nic",cont:"asia",ar:"شمال قبرص",en:"Northern Cyprus",capAr:"لفكوشا",capEn:"Lefkoşa"},
+  // ===== أقاليم/كيانات إضافية جديدة =====
+  {code:"gl",cont:"namerica",ar:"جرينلاند",en:"Greenland",capAr:"نوك",capEn:"Nuuk"},
+  {code:"fo",cont:"europe",ar:"جزر فارو",en:"Faroe Islands",capAr:"تورشافن",capEn:"Tórshavn"},
+  {code:"im",cont:"europe",ar:"جزيرة مان",en:"Isle of Man",capAr:"دوجلاس",capEn:"Douglas"},
+  {code:"je",cont:"europe",ar:"جيرزي",en:"Jersey",capAr:"سانت هيلير",capEn:"Saint Helier"},
+  {code:"gg",cont:"europe",ar:"جيرنزي",en:"Guernsey",capAr:"سانت بيتر بورت",capEn:"Saint Peter Port"},
+  {code:"gi",cont:"europe",ar:"جبل طارق",en:"Gibraltar",capAr:"جبل طارق",capEn:"Gibraltar"},
+  {code:"bm",cont:"namerica",ar:"برمودا",en:"Bermuda",capAr:"هاميلتون",capEn:"Hamilton"},
+  {code:"pr",cont:"namerica",ar:"بورتوريكو",en:"Puerto Rico",capAr:"سان خوان",capEn:"San Juan"},
+  {code:"aw",cont:"namerica",ar:"أروبا",en:"Aruba",capAr:"أورانيستاد",capEn:"Oranjestad"},
+  {code:"cw",cont:"namerica",ar:"كوراساو",en:"Curaçao",capAr:"ويليمستاد",capEn:"Willemstad"},
+  {code:"sx",cont:"namerica",ar:"سينت مارتن",en:"Sint Maarten",capAr:"فيليبسبورخ",capEn:"Philipsburg"},
+  {code:"ck",cont:"oceania",ar:"جزر كوك",en:"Cook Islands",capAr:"أفاروا",capEn:"Avarua"},
+  {code:"nu",cont:"oceania",ar:"نييوي",en:"Niue",capAr:"ألوفي",capEn:"Alofi"},
+  {code:"as",cont:"oceania",ar:"ساموا الأمريكية",en:"American Samoa",capAr:"باغو باغو",capEn:"Pago Pago"},
+  {code:"gu",cont:"oceania",ar:"جوام",en:"Guam",capAr:"هاغاتنا",capEn:"Hagåtña"},
+  {code:"pf",cont:"oceania",ar:"بولينيزيا الفرنسية",en:"French Polynesia",capAr:"بابيتي",capEn:"Papeete"},
+  {code:"nc",cont:"oceania",ar:"كاليدونيا الجديدة",en:"New Caledonia",capAr:"نوميا",capEn:"Nouméa"},
 ];
 
 /* ---------------------------------------------------------------------
@@ -967,28 +1022,19 @@ const MONARCHY_CODES = [
   "sz","ls","to",
   // Commonwealth realms (constitutional monarchies sharing the British monarch as head of state)
   "ca","au","nz","jm","bs","bz","gd","pg","sb","tv","kn","lc","vc","ag",
+  // Crown dependencies / overseas territories of monarchies, and the
+  // constituent nations of the UK — grouped with their monarchy rather
+  // than falling into the republics bucket by default.
+  "eng","sct","gl","fo","im","je","gg","gi","bm","aw","cw","sx","ck","nu",
 ];
 
 /* ---------------------------------------------------------------------
-   Territories / entities that are NOT sovereign UN-member countries —
-   kept fully separate from `countries` (never counted in the 196-country
-   totals, progress bars, or "known" tallies). Played only via their own
-   grouping below. Deliberately excludes Israel/Palestine-adjacent
-   contested claims beyond what's already in the main list.
-   Hong Kong, Macau, and Western Sahara have real ISO 3166-1 codes, so
-   their flags load the normal way. Scotland, England, and Northern
-   Cyprus have no ISO code at all, so their flags are drawn inline
-   below instead of depending on a flag CDN that wouldn't have them.
+   Scotland, England, and Northern Cyprus have no ISO 3166-1 code at
+   all, so their flags are drawn inline below instead of depending on a
+   flag CDN that wouldn't have them. (Hong Kong, Macau, and Western
+   Sahara — also non-UN entities, now merged into `countries` above —
+   have real ISO codes, so their flags load the normal CDN way.)
    --------------------------------------------------------------------- */
-const TERRITORIES = [
-  { code: "hk",  ar: "هونج كونج",     en: "Hong Kong",         capAr: "هونج كونج", capEn: "Hong Kong" },
-  { code: "mo",  ar: "ماكاو",         en: "Macau",             capAr: "ماكاو",     capEn: "Macau" },
-  { code: "eh",  ar: "الصحراء الغربية", en: "Western Sahara",  capAr: "العيون",    capEn: "Laayoune" },
-  { code: "sct", ar: "اسكتلندا",      en: "Scotland",          capAr: "إدنبرة",    capEn: "Edinburgh" },
-  { code: "eng", ar: "إنجلترا",       en: "England",           capAr: "لندن",      capEn: "London" },
-  { code: "nic", ar: "شمال قبرص",     en: "Northern Cyprus",   capAr: "لفكوشا",    capEn: "Lefkoşa" },
-];
-
 const CUSTOM_FLAG_SVG = {
   eng: 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36">' +
@@ -1013,7 +1059,7 @@ const CUSTOM_FLAG_SVG = {
 };
 
 function findEntity(code) {
-  return countries.find(c => c.code === code) || TERRITORIES.find(t => t.code === code);
+  return countries.find(c => c.code === code);
 }
 
 const BLOCS = [
@@ -1024,7 +1070,7 @@ const BLOCS = [
   { key: "bloc_g7",     emoji: "💼", ar: "مجموعة السبع G7",           en: "G7",
     codes: ["us","gb","fr","de","it","ca","jp"] },
   { key: "bloc_brics",  emoji: "🌐", ar: "بريكس BRICS",               en: "BRICS",
-    codes: ["br","ru","in","cn","za"] },
+    codes: ["br","ru","in","cn","za","eg","et","id","ir","sa","ae"] },
   { key: "bloc_asean",  emoji: "🌏", ar: "آسيان ASEAN",               en: "ASEAN",
     codes: ["id","my","ph","sg","th","bn","vn","la","mm","kh"] },
   { key: "bloc_nato",   emoji: "🛡️", ar: "الناتو NATO",               en: "NATO",
@@ -1035,6 +1081,9 @@ const BLOCS = [
             "in","pk","ph","sg","pg","fj","sb","vu","ws"] },
   { key: "bloc_spanish", emoji: "🗣️", ar: "دول ناطقة بالإسبانية",     en: "Spanish-speaking countries",
     codes: ["es","mx","gt","hn","sv","ni","cr","pa","cu","do","co","ve","ec","pe","bo","py","uy","ar","cl","gq"] },
+  { key: "bloc_french", emoji: "🗣️", ar: "دول ناطقة بالفرنسية",      en: "French-speaking countries",
+    codes: ["fr","be","ch","ca","lu","mc","sn","ml","ne","td","gn","ci","bf","bj","tg",
+            "cm","ga","cg","cd","cf","dj","km","mg","rw","bi","gq","ht","vu","sc"] },
   { key: "bloc_ww2_axis", emoji: "⚔️", ar: "المحور – الحرب العالمية الثانية", en: "WWII: Axis Powers",
     codes: ["de","it","jp"] },
   { key: "bloc_ww2_allies", emoji: "🎖️", ar: "الحلفاء الكبار – الحرب العالمية الثانية", en: "WWII: Major Allied Powers",
@@ -1043,8 +1092,6 @@ const BLOCS = [
     codes: MONARCHY_CODES },
   { key: "bloc_republic", emoji: "🏛️", ar: "الدول الجمهورية",        en: "Republics",
     codes: countries.filter(c => !MONARCHY_CODES.includes(c.code)).map(c => c.code) },
-  { key: "bloc_unofficial", emoji: "🏴", ar: "دول غير رسمية / مش في الأمم المتحدة", en: "Unofficial / Non-UN entities",
-    codes: TERRITORIES.map(t => t.code) },
 ];
 function isBlocKey(key) { return typeof key === "string" && key.startsWith("bloc_"); }
 function findBloc(key) { return BLOCS.find(b => b.key === key); }
@@ -1230,9 +1277,9 @@ const MAP_DATA = [{"code":"af","type":"Polygon","coords":[[[61.21,35.65],[62.23,
 const MAX_LIVES = 3;
 
 /* ---------------------------------------------------------------------
-   Map shapes for the non-UN entities in TERRITORIES. The world-borders
-   dataset above only covers sovereign states, so these are derived by
-   hand:
+   Map shapes for non-UN entities that have no ISO-code flag CDN entry
+   or need a custom outline. The world-borders dataset above only
+   covers sovereign states, so these are derived by hand:
      eh  – the Western Sahara ring lifted straight out of Morocco's own
            outline (the 27°40'N parallel east from the Atlantic, then the
            Mauritania border south-west to Cap Blanc, then up the coast).
@@ -1288,6 +1335,13 @@ const MARKER_POINTS = {
   pw: [134.48, 7.34], ws: [-171.76, -13.83], to: [-175.20, -21.14], tv: [179.20, -8.52],
   // Non-UN entities (see TERRITORY_MAP_DATA above)
   hk: [114.17, 22.32], mo: [113.55, 22.17], nic: [33.40, 35.28],
+  // Additional small territories/entities — drawn as clickable squares,
+  // same treatment as the other tiny island states above.
+  gl: [-51.72, 64.18], fo: [-6.79, 62.01], im: [-4.48, 54.15], je: [-2.11, 49.19],
+  gg: [-2.54, 49.45], gi: [-5.35, 36.14], bm: [-64.78, 32.29], pr: [-66.11, 18.47],
+  aw: [-70.03, 12.52], cw: [-68.99, 12.11], sx: [-63.03, 18.03], ck: [-159.78, -21.21],
+  nu: [-169.92, -19.06], as: [-170.70, -14.28], gu: [144.75, 13.48], pf: [-149.57, -17.53],
+  nc: [166.46, -22.28],
 };function markerXY(code) { const [lon, lat] = MARKER_POINTS[code]; return [lon, -lat]; }
 
 function featurePathD(feature) {
@@ -1588,7 +1642,6 @@ function categoryKnownSet() { return knownByCategory[selectedCategory]; }
 // country list for whichever one was picked.
 function regionCountries(key) {
   if (!key) return countries;
-  if (key === 'bloc_unofficial') return TERRITORIES;
   if (isBlocKey(key)) return countries.filter(c => findBloc(key).codes.includes(c.code));
   return countries.filter(c => c.cont === key);
 }
@@ -1780,9 +1833,10 @@ function renderCategoryScreen() {
     { id: 'memory',   label: t().categoryMemory,   desc: t().categoryMemoryDesc },
   ];
   categoryGrid.innerHTML = '';
-  cats.forEach(c => {
+  cats.forEach((c, i) => {
     const card = document.createElement('button');
-    card.className = 'mode-card';
+    // 5 cards: the first 4 sit two-per-row, the last one spans full width below.
+    card.className = i === cats.length - 1 ? 'mode-card cat-card cat-card-wide' : 'mode-card cat-card';
     card.innerHTML = `<div class="cc-name">${c.label}</div><div class="mode-desc">${c.desc}</div>`;
     card.addEventListener('click', () => chooseCategory(c.id));
     categoryGrid.appendChild(card);
