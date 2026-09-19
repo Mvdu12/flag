@@ -18,6 +18,17 @@
     --stamp-red: #a3372c;
     --green: #4c995a;
     --line: rgba(201,162,75,0.35);
+    /* Shared shape / depth tokens so every screen speaks the same language */
+    --r-card: 1.25rem;
+    --r-inner: 1rem;
+    --shadow-card: 0 10px 22px rgba(0,0,0,0.28);
+    --shadow-lift: 0 14px 30px rgba(0,0,0,0.4);
+    --shadow-btn: 0 6px 14px rgba(0,0,0,0.32);
+    --grad-gold: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    --grad-glass: linear-gradient(135deg, rgba(244,236,216,0.11), rgba(244,236,216,0.03) 75%);
+    --grad-gold-tint: linear-gradient(135deg, rgba(201,162,75,0.24), rgba(201,162,75,0.05) 75%);
+    --grad-red-tint: linear-gradient(135deg, rgba(163,55,44,0.34), rgba(163,55,44,0.08) 75%);
+    --grad-green-tint: linear-gradient(135deg, rgba(76,153,90,0.36), rgba(76,153,90,0.08) 75%);
   }
   html {
     /* Fluid base size: text and rem-based spacing grow with the viewport,
@@ -44,7 +55,7 @@
      is never anything to pinch-zoom or pan just to reach a button. */
   .passport {
     width: 100%; min-height: 100vh; min-height: 100dvh;
-    display: flex; flex-direction: column; justify-content: center;
+    display: flex; flex-direction: column; justify-content: safe center;
     margin: 0 auto; max-width: 720px;
     background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
     border: none; border-radius: 0;
@@ -52,11 +63,19 @@
     padding: max(0.875rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
               max(0.875rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
     position: relative; overflow-x: hidden; overflow-y: auto;
+    /* Forces its own GPU compositing layer. Without this, Chrome on
+       Windows can fail to repaint the box-shadowed cards correctly
+       while scrolling this container (visible as content that looks
+       stuck/missing until you zoom, which forces a reflow). */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   /* On screens wide enough to comfortably show it as a panel rather
      than a full device screen, bring back a subtle frame. */
   @media (min-width: 760px) {
-    body { display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    body { display: flex; align-items: safe center; justify-content: safe center; padding: 1.5rem; }
     .passport {
       min-height: min(92vh, 800px);
       border: 1px solid var(--line); border-radius: 1rem;
@@ -71,15 +90,23 @@
   }
   header { text-align: center; margin-bottom: 14px; position: relative; }
   .top-controls {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 0.5rem;
+    display: flex; justify-content: space-between; align-items: safe center; margin-bottom: 6px; gap: 0.5rem;
   }
   .top-controls-side { display: flex; gap: 0.375rem; }
   .back-btn, .lang-btn, .icon-btn {
-    background: none; border: 1px solid var(--line); color: var(--parchment);
-    font-size: 0.75rem; padding: 0.5rem 10px; border-radius: 999px; cursor: pointer; font-family: inherit;
-    min-height: 2.25rem;
+    background: var(--grad-glass); border: 1px solid var(--line); color: var(--parchment);
+    font-size: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 999px; cursor: pointer; font-family: inherit;
+    min-height: 2.25rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .back-btn:hover, .lang-btn:hover, .icon-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
+  .icon-btn { font-size: 1rem; min-width: 2.5rem; padding-inline: 0.625rem; line-height: 1; }
+  .back-btn:hover, .lang-btn:hover, .icon-btn:hover {
+    border-color: var(--gold); color: var(--gold-bright); transform: scale(1.02);
+  }
+  .back-btn:active, .lang-btn:active, .icon-btn:active { transform: scale(0.97); }
+  /* Home button is not needed on the main menu itself. visibility (not display)
+     keeps the other header buttons from shifting when it appears/disappears. */
+  .icon-btn.is-inert { visibility: hidden; }
   .eyebrow {
     letter-spacing: 0.25rem; font-size: 0.6875rem; color: var(--gold); text-transform: uppercase;
     margin-bottom: 6px; font-weight: 600;
@@ -91,14 +118,21 @@
     display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(244,236,216,0.65); margin-bottom: 6px;
   }
   .world-progress .wp-label b { color: var(--gold-bright); }
-  .bar-track { height: 8px; border-radius: 999px; background: rgba(244,236,216,0.08); overflow: hidden; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--stamp-red), var(--gold), var(--green)); border-radius: 999px; transition: width 0.4s ease; }
+  .bar-track {
+    height: 0.625rem; border-radius: 999px; background: rgba(244,236,216,0.09); overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.45);
+  }
+  .bar-fill {
+    height: 100%; border-radius: 999px; transition: width 0.4s ease;
+    background: linear-gradient(90deg, var(--stamp-red) 0%, #d08a3c 35%, var(--gold-bright) 60%, var(--green) 100%);
+    box-shadow: 0 0 8px rgba(230,195,104,0.35);
+  }
 
   .continent-grid, .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
   .section-divider {
     text-align: center; font-size: 0.75rem; color: rgba(244,236,216,0.45);
     margin: 1.25rem 0 0.75rem; letter-spacing: 0.03125rem;
-    display: flex; align-items: center; gap: 0.5rem;
+    display: flex; align-items: safe center; gap: 0.5rem;
   }
   .section-divider::before, .section-divider::after {
     content: ""; flex: 1; height: 1px; background: var(--line);
@@ -139,20 +173,56 @@
   .mode-card { grid-column: 1 / -1; text-align: center; }
   .mode-card.cat-card { grid-column: auto; }
   .mode-card.cat-card-wide { grid-column: 1 / -1; }
-  .cc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .continent-card.world .cc-top, .mode-card .cc-top { justify-content: center; gap: 0.625rem; }
+  .cc-top { display: flex; align-items: safe center; justify-content: space-between; margin-bottom: 8px; }
+  .continent-card.world .cc-top, .mode-card .cc-top { justify-content: safe center; gap: 0.625rem; }
   .cc-emoji {
-    font-size: 1.375rem; display: inline-flex; align-items: center; justify-content: center;
-    width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(255,255,255,0.14);
+    font-size: 1.75rem; line-height: 1; display: inline-flex; align-items: safe center; justify-content: safe center;
+    width: 2.875rem; height: 2.875rem; border-radius: 50%;
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.25);
     flex-shrink: 0;
   }
   .cc-name { font-weight: 800; font-size: 0.875rem; }
   .cc-count { font-size: 0.6875rem; color: rgba(244,236,216,0.55); margin-top: 4px; }
   .cc-best { font-size: 0.6875rem; color: var(--gold-bright); margin-top: 2px; }
-  .continent-card .bar-track { height: 5px; margin-top: 8px; }
+  .continent-card .bar-track { height: 0.375rem; margin-top: 0.5rem; }
   .mode-desc { font-size: 0.6875rem; color: rgba(244,236,216,0.5); margin-top: 4px; }
+  /* A tab with an odd number of cards: the last one takes the full row. */
+  .continent-card.wide { grid-column: 1 / -1; }
 
-  .top-row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 14px; flex-wrap: wrap; gap: 0.375rem; }
+  /* The picker's height changes from tab to tab. Let it fill the panel (instead of being
+     vertically centered with everything else) so the header and the tab bar stay put
+     under the player's finger when switching between a long tab and a short one. */
+  #continentScreen { flex: 1 0 auto; }
+
+  /* ---- Continent screen tabs (continents / unions / languages / history) ---- */
+  .cont-tabs {
+    display: flex; gap: 0.5rem; margin: 0 0 0.5rem; padding: 0.25rem 0.25rem 0.625rem;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .cont-tabs::-webkit-scrollbar { display: none; }
+  .cont-tab {
+    flex: 1 0 auto; display: inline-flex; align-items: safe center; justify-content: safe center; gap: 0.375rem;
+    padding: 0.5rem 1rem; min-height: 2.75rem; border-radius: 999px; white-space: nowrap;
+    border: 1px solid var(--line); background: var(--grad-glass); color: var(--parchment);
+    font-family: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer;
+    /* narrow shadow (negative spread): the tab bar scrolls, so it clips anything wider */
+    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .cont-tab:hover { transform: scale(1.02); border-color: var(--gold); }
+  .cont-tab:active { transform: scale(0.97); }
+  /* Phones: tighten the pills so all four tabs fit in one row without scrolling. */
+  @media (max-width: 480px) {
+    .cont-tabs { gap: 0.3125rem; padding-inline: 0.125rem; }
+    .cont-tab { padding: 0.5rem 0.5rem; gap: 0.25rem; font-size: 0.75rem; }
+  }
+  .cont-tab[aria-selected="true"] {
+    background: var(--grad-gold); color: var(--navy-deep); border-color: transparent; font-weight: 800;
+    box-shadow: 0 5px 10px -2px rgba(201,162,75,0.45);
+  }
+
+  .top-row { display: flex; justify-content: space-between; align-items: safe center; margin: 4px 0 14px; flex-wrap: wrap; gap: 0.375rem; }
   .lives { font-size: 1.125rem; letter-spacing: 0.1875rem; }
   .lives .lost { opacity: 0.25; filter: grayscale(1); }
   .timer-display { font-size: 0.9375rem; font-weight: 800; color: var(--gold-bright); letter-spacing: 0.0625rem; }
@@ -162,20 +232,24 @@
   .session-score b { color: var(--gold-bright); font-size: 1rem; }
 
   .stage {
-    background: rgba(244,236,216,0.03); border: 1px solid var(--line); border-radius: 1.25rem;
+    background: var(--grad-glass); border: 1px solid var(--line); border-radius: var(--r-card);
     padding: 1rem 14px; text-align: center; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 0.625rem; min-height: 10.625rem;
+    align-items: safe center; justify-content: safe center; gap: 0.625rem; min-height: 10.625rem;
     box-shadow: 0 10px 22px rgba(0,0,0,0.28);
   }
-  .country-label { font-size: 1.125rem; font-weight: 700; color: var(--gold-bright); }
+  .country-label {
+    font-size: 1.125rem; font-weight: 800; color: var(--gold-bright);
+    padding: 0.375rem 1.25rem; border-radius: var(--r-card);
+    background: var(--grad-gold-tint); border: 1px solid var(--line); box-shadow: var(--shadow-card);
+  }
   .flag-frame {
-    width: 180px; max-width: 60vw; height: 120px; border-radius: 0.375rem; overflow: hidden;
+    width: 180px; max-width: 60vw; height: 120px; border-radius: var(--r-inner); overflow: hidden;
     background: rgba(0,0,0,0.15);
     border: 3px solid var(--gold);
     box-shadow:
-      0 10px 24px rgba(0,0,0,0.5),
+      var(--shadow-card),
       0 0 0 1px var(--navy-deep),
-      0 0 0 5px rgba(201,162,75,0.35),
+      0 0 0 5px rgba(201,162,75,0.3),
       inset 0 0 0 1px rgba(0,0,0,0.4);
   }
   .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; transition: none; }
@@ -183,34 +257,45 @@
 
   /* Result badge sits below the flag/map (never on top of it) so it's always visible */
   .verdict-badge {
-    display: inline-flex; flex-direction: column; align-items: center; gap: 0.125rem;
+    display: inline-flex; flex-direction: column; align-items: safe center; gap: 0.125rem;
     border: 2px solid var(--stamp-red); color: var(--stamp-red);
-    border-radius: 1rem; padding: 0.375rem 16px; font-weight: 800; font-size: 0.8125rem;
+    border-radius: var(--r-card); padding: 0.4375rem 1.125rem; font-weight: 800; font-size: 0.8125rem;
     opacity: 0; transform: translateY(-6px); transition: all 0.25s ease; max-width: 100%;
+    box-shadow: var(--shadow-card);
   }
   .verdict-badge.show { opacity: 1; transform: translateY(0); }
-  .verdict-badge.correct { border-color: var(--green); color: #bfe6c4; background: rgba(76,153,90,0.12); }
-  .verdict-badge.wrong { border-color: var(--stamp-red); color: #f0b8b0; background: rgba(163,55,44,0.12); }
+  .verdict-badge.correct { border-color: var(--green); color: #bfe6c4; background: var(--grad-green-tint); }
+  .verdict-badge.wrong { border-color: var(--stamp-red); color: #f0b8b0; background: var(--grad-red-tint); }
   .verdict-badge .verdict-sub { font-weight: 600; font-size: 0.6875rem; opacity: 0.85; }
 
   .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-top: 4px; width: 100%; }
   .choice {
-    background: rgba(244,236,216,0.05); border: 1px solid var(--line); color: var(--parchment);
-    padding: 0.8125rem 10px; border-radius: 999px; font-size: 0.875rem; cursor: pointer; font-family: inherit;
-    transition: background 0.15s, border-color 0.15s, transform 0.1s; text-align: center;
-    min-height: 2.875rem;
+    background: var(--grad-glass); border: 1px solid var(--line); color: var(--parchment);
+    padding: 0.8125rem 0.75rem; border-radius: var(--r-inner); font-size: 0.875rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; text-align: center; min-height: 2.875rem;
+    box-shadow: var(--shadow-btn);
+    transition: background 0.15s, border-color 0.15s, transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .choice:hover:not(:disabled) { background: rgba(201,162,75,0.12); border-color: var(--gold); }
-  .choice:active:not(:disabled) { transform: scale(0.97); }
+  .choice:hover:not(:disabled) {
+    background: var(--grad-gold-tint); border-color: var(--gold);
+    transform: scale(1.02); box-shadow: var(--shadow-lift);
+  }
+  .choice:active:not(:disabled) { transform: scale(0.98); }
   .choice:disabled { cursor: default; }
-  .choice.correct { background: rgba(76,153,90,0.18); border-color: var(--green); color: #bfe6c4; }
-  .choice.incorrect { background: rgba(163,55,44,0.18); border-color: var(--stamp-red); color: #f0b8b0; }
+  .choice.correct {
+    background: linear-gradient(135deg, rgba(76,153,90,0.5), rgba(76,153,90,0.16));
+    border-color: var(--green); color: #d6f2d9; box-shadow: 0 0 0 1px var(--green), var(--shadow-btn);
+  }
+  .choice.incorrect {
+    background: linear-gradient(135deg, rgba(163,55,44,0.5), rgba(163,55,44,0.16));
+    border-color: var(--stamp-red); color: #f7cdc7; box-shadow: 0 0 0 1px var(--stamp-red), var(--shadow-btn);
+  }
 
   .type-wrap { position: relative; width: 100%; margin-top: 4px; }
   .type-row { display: flex; gap: 0.5rem; width: 100%; }
   .type-suggestions {
     position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
-    background: var(--navy); border: 1px solid var(--gold); border-radius: 0.5rem;
+    background: var(--navy); border: 1px solid var(--gold); border-radius: var(--r-inner);
     max-height: 220px; overflow-y: auto;
     box-shadow: 0 10px 24px rgba(0,0,0,0.5);
   }
@@ -223,36 +308,44 @@
   .type-suggestion:hover, .type-suggestion:active { background: rgba(201,162,75,0.15); }
   .type-suggestion b { color: var(--gold-bright); }
   .type-input {
-    flex: 1; background: rgba(244,236,216,0.05); border: 1px solid var(--line); color: var(--parchment);
-    padding: 0.75rem 14px; border-radius: 0.5rem; font-size: 1rem; font-family: inherit; min-height: 2.875rem;
+    flex: 1; min-width: 0; background: var(--grad-glass); border: 1px solid var(--line); color: var(--parchment);
+    padding: 0.75rem 1.125rem; border-radius: var(--r-card); font-size: 1rem; font-family: inherit; min-height: 2.875rem;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  .type-input:focus { outline: none; border-color: var(--gold); }
+  .type-input:focus { outline: none; border-color: var(--gold); box-shadow: var(--shadow-card), 0 0 0 3px rgba(201,162,75,0.25); }
   .type-submit {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 0 18px;
+    background: var(--grad-gold); color: var(--navy-deep); border: none; padding: 0 1.125rem;
     border-radius: 999px; font-weight: 800; cursor: pointer; font-family: inherit; font-size: 0.8125rem;
-    min-height: 2.875rem; min-width: 64px;
+    min-height: 2.875rem; min-width: 4rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
   }
-  .type-submit:hover { background: var(--gold-bright); }
+  .type-submit:hover:not(:disabled) { transform: scale(1.02); filter: brightness(1.08); box-shadow: var(--shadow-lift); }
+  .type-submit:active:not(:disabled) { transform: scale(0.98); }
   .type-submit:disabled { opacity: 0.5; cursor: default; }
 
-  .foot-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
+  .foot-row { display: flex; justify-content: space-between; align-items: safe center; margin-top: 16px; gap: 8px; }
   .next-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 24px; border-radius: 999px;
+    background: var(--grad-gold); color: var(--navy-deep); border: none; padding: 0.75rem 1.5rem; border-radius: 999px;
     font-weight: 800; font-size: 0.875rem; cursor: pointer; font-family: inherit;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
-    min-height: 2.875rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    min-height: 2.875rem; box-shadow: var(--shadow-btn);
   }
   .next-btn.ready { opacity: 1; pointer-events: auto; }
-  .next-btn:hover { background: var(--gold-bright); }
+  .next-btn:hover { transform: scale(1.02); filter: brightness(1.08); box-shadow: var(--shadow-lift); }
+  .next-btn:active { transform: scale(0.98); }
 
   .hint-btn {
-    background: none; border: 1px solid var(--gold); color: var(--gold-bright);
+    background: var(--grad-gold-tint); border: 1px solid var(--gold); color: var(--gold-bright);
     padding: 0.75rem 1.1rem; border-radius: 999px;
-    font-weight: 700; font-size: 0.8125rem; cursor: pointer; font-family: inherit;
-    min-height: 2.875rem;
+    font-weight: 800; font-size: 0.8125rem; cursor: pointer; font-family: inherit;
+    min-height: 2.875rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
-  .hint-btn:hover { background: rgba(201,162,75,0.12); }
-  .hint-btn:disabled { opacity: 0.35; cursor: default; }
+  .hint-btn:hover:not(:disabled) { transform: scale(1.02); background: rgba(201,162,75,0.28); box-shadow: var(--shadow-lift); }
+  .hint-btn:active:not(:disabled) { transform: scale(0.98); }
+  .hint-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
 
   .end-screen { text-align: center; padding: 0.375rem 2px; }
   .end-icon { font-size: 2.375rem; margin-bottom: 4px; }
@@ -274,23 +367,26 @@
   .pl-row.total .pl-top span:first-child { font-weight: 700; color: var(--parchment); }
   .pl-row.total { margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--line); }
 
-  .missed-chips, .history-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+  .missed-chips, .history-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: safe center; }
   .missed-chip {
-    display: flex; align-items: center; gap: 0.375rem; background: rgba(163,55,44,0.12);
+    display: flex; align-items: safe center; gap: 0.375rem; background: rgba(163,55,44,0.12);
     border: 1px solid rgba(163,55,44,0.4); border-radius: 1.25rem; padding: 0.25rem 12px 4px 4px; font-size: 0.75rem;
   }
   html[dir="ltr"] .missed-chip { padding: 0.25rem 4px 4px 12px; }
   .missed-chip img { width: 22px; height: 15px; object-fit: cover; border-radius: 0.1875rem; }
 
-  .end-buttons { display: flex; gap: 0.625rem; justify-content: center; flex-wrap: wrap; }
+  .end-buttons { display: flex; gap: 0.625rem; justify-content: safe center; flex-wrap: wrap; }
   .restart-btn, .menu-btn {
-    padding: 0.75rem 18px; border-radius: 999px; font-weight: 800; cursor: pointer; font-family: inherit;
-    font-size: 0.8125rem; border: 1px solid var(--gold); min-height: 2.75rem;
+    padding: 0.75rem 1.125rem; border-radius: 999px; font-weight: 800; cursor: pointer; font-family: inherit;
+    font-size: 0.8125rem; border: 1px solid var(--gold); min-height: 2.75rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
   }
-  .restart-btn { background: var(--stamp-red); color: var(--parchment); border: none; }
-  .restart-btn:hover { background: #b8483c; }
-  .menu-btn { background: transparent; color: var(--gold-bright); }
-  .menu-btn:hover { background: rgba(201,162,75,0.1); }
+  .restart-btn { background: linear-gradient(135deg, #c4493c, var(--stamp-red)); color: var(--parchment); border: none; }
+  .menu-btn { background: var(--grad-gold-tint); color: var(--gold-bright); }
+  .restart-btn:hover, .menu-btn:hover { transform: scale(1.02); box-shadow: var(--shadow-lift); }
+  .restart-btn:hover { filter: brightness(1.1); }
+  .menu-btn:hover { background: rgba(201,162,75,0.26); }
+  .restart-btn:active, .menu-btn:active { transform: scale(0.98); }
 
   .map-target-name {
     font-size: 1.25rem; font-weight: 800; color: var(--gold-bright);
@@ -302,9 +398,9 @@
   .map-wrap {
     width: 100%;
     height: min(58vh, 340px);
-    border-radius: 0.5rem; overflow: hidden;
+    border-radius: var(--r-inner); overflow: hidden;
     background: #0d1c30; border: 1px solid var(--line); touch-action: none;
-    position: relative;
+    position: relative; box-shadow: var(--shadow-card);
   }
   .map-wrap svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .map-country {
@@ -325,28 +421,34 @@
   }
   html[dir="rtl"] .map-controls { left: auto; right: 10px; }
   .map-ctrl-btn {
-    width: 40px; height: 40px; border-radius: 0.5rem;
-    background: rgba(10,22,38,0.85); border: 1px solid var(--line); color: var(--parchment);
-    font-size: 1.1875rem; font-weight: 700; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    width: 2.5rem; height: 2.5rem; border-radius: 999px;
+    background: linear-gradient(135deg, rgba(30,54,92,0.95), rgba(10,22,38,0.9));
+    border: 1px solid var(--line); color: var(--parchment);
+    font-size: 1.1875rem; font-weight: 700; line-height: 1; cursor: pointer; font-family: inherit;
+    display: flex; align-items: safe center; justify-content: safe center;
+    box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .map-ctrl-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
+  .map-ctrl-btn:hover { border-color: var(--gold); color: var(--gold-bright); transform: scale(1.08); box-shadow: var(--shadow-lift); }
   .map-ctrl-btn:active { transform: scale(0.95); }
   .map-ctrl-reset { font-size: 1rem; }
 
   .study-controls {
-    display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 0.5rem;
+    display: flex; align-items: safe center; justify-content: space-between; margin-top: 16px; gap: 0.5rem;
   }
   .study-nav-btn {
-    background: var(--gold); color: var(--navy-deep); border: none; padding: 0.75rem 16px; border-radius: 999px;
+    background: var(--grad-gold); color: var(--navy-deep); border: none; padding: 0.75rem 1rem; border-radius: 999px;
     font-weight: 800; font-size: 0.8125rem; cursor: pointer; font-family: inherit; min-height: 2.875rem;
+    box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
   }
-  .study-nav-btn:hover { background: var(--gold-bright); }
+  .study-nav-btn:hover { transform: scale(1.02); filter: brightness(1.08); box-shadow: var(--shadow-lift); }
+  .study-nav-btn:active { transform: scale(0.98); }
   .study-position { font-size: 0.75rem; color: rgba(244,236,216,0.6); white-space: nowrap; }
 
   .memory-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
   .memory-top-row {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: safe center;
     font-size: 0.8125rem; color: rgba(244,236,216,0.7);
   }
   .memory-progress b { color: var(--gold-bright); }
@@ -354,12 +456,13 @@
 
   .memory-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.5rem;
-    max-height: 40vh; overflow-y: auto; padding: 0.25rem;
+    max-height: 40vh; overflow-y: auto; padding: 0.5rem;
   }
   .memory-box {
-    aspect-ratio: 3 / 2; border-radius: 0.375rem; border: 1px dashed var(--line);
-    background: rgba(244,236,216,0.03); display: flex; align-items: center; justify-content: center;
-    overflow: hidden; position: relative;
+    aspect-ratio: 3 / 2; border-radius: 0.875rem; border: 1px dashed var(--line);
+    background: var(--grad-glass); display: flex; align-items: safe center; justify-content: safe center;
+    overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .memory-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .memory-box .memory-box-label {
@@ -367,25 +470,29 @@
     font-size: 0.5625rem; text-align: center; padding: 1px 2px; color: var(--parchment);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .memory-box.solved { border-style: solid; border-color: var(--green); }
-  .memory-box.pending { border-style: solid; border-color: var(--gold); opacity: 0.75; }
+  .memory-box.solved { border-style: solid; border-color: var(--green); background: var(--grad-green-tint); }
+  .memory-box.pending { border-style: solid; border-color: var(--gold); background: var(--grad-gold-tint); opacity: 0.75; }
 
-  .memory-hint-row { display: flex; gap: 0.5rem; justify-content: center; }
+  .memory-hint-row { display: flex; gap: 0.5rem; justify-content: safe center; }
   .memory-hint-btn {
-    flex: 1; background: none; border: 1px solid var(--gold); color: var(--gold-bright);
-    padding: 0.625rem; border-radius: 0.4375rem; font-size: 1.125rem; cursor: pointer;
-    font-family: inherit; min-height: 2.75rem;
+    flex: 1; background: var(--grad-gold-tint); border: 1px solid var(--gold); color: var(--gold-bright);
+    padding: 0.625rem; border-radius: var(--r-inner); font-size: 1.125rem; cursor: pointer;
+    font-family: inherit; min-height: 2.75rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
-  .memory-hint-btn:hover:not(:disabled) { background: rgba(201,162,75,0.12); }
-  .memory-hint-btn:disabled { opacity: 0.3; cursor: default; }
+  .memory-hint-btn:hover:not(:disabled) { background: rgba(201,162,75,0.28); transform: scale(1.02); box-shadow: var(--shadow-lift); }
+  .memory-hint-btn:active:not(:disabled) { transform: scale(0.98); }
+  .memory-hint-btn:disabled { opacity: 0.3; cursor: default; box-shadow: none; }
   .memory-hint-msg { text-align: center; font-size: 0.75rem; color: var(--gold-bright); }
 
   .memory-giveup-btn {
-    background: none; border: 1px solid var(--stamp-red); color: #f0b8b0;
-    padding: 0.625rem; border-radius: 0.4375rem; font-size: 0.8125rem; cursor: pointer;
-    font-family: inherit; min-height: 2.5rem;
+    background: var(--grad-red-tint); border: 1px solid var(--stamp-red); color: #f0b8b0;
+    padding: 0.625rem; border-radius: var(--r-inner); font-size: 0.8125rem; font-weight: 700; cursor: pointer;
+    font-family: inherit; min-height: 2.5rem; box-shadow: var(--shadow-btn);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
-  .memory-giveup-btn:hover { background: rgba(163,55,44,0.12); }
+  .memory-giveup-btn:hover { background: rgba(163,55,44,0.38); transform: scale(1.02); box-shadow: var(--shadow-lift); }
+  .memory-giveup-btn:active { transform: scale(0.98); }
   .type-input.shake { animation: shake 0.3s; }
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -394,17 +501,27 @@
   }
 
   .history-empty { text-align: center; color: rgba(244,236,216,0.5); font-size: 0.8125rem; padding: 1.875rem 10px; }
-  .history-row {
-    border: 1px solid var(--line); border-radius: 0.625rem; padding: 0.75rem; margin-bottom: 10px;
-    background: rgba(244,236,216,0.03);
+  .history-title {
+    text-align: center; color: var(--gold-bright); font-weight: 800; font-size: 0.9375rem;
+    margin-bottom: 0.875rem;
   }
-  .history-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8125rem; }
+  .history-row {
+    border: 1px solid var(--line); border-radius: var(--r-card); padding: 0.875rem 1rem; margin-bottom: 0.75rem;
+    background: var(--grad-glass); box-shadow: var(--shadow-card);
+  }
+  .history-row-top { display: flex; justify-content: space-between; align-items: safe center; margin-bottom: 6px; font-size: 0.8125rem; }
   .history-row-top .hr-title { font-weight: 700; color: var(--parchment); }
   .history-row-top .hr-result { color: var(--gold-bright); font-weight: 700; }
   .history-row-meta { font-size: 0.6875rem; color: rgba(244,236,216,0.5); margin-bottom: 6px; }
   .history-note { font-size: 0.6875rem; color: rgba(244,236,216,0.45); text-align: center; margin-top: 6px; }
 
   .hidden { display: none !important; }
+
+  button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    button:hover, button:active { transform: none !important; }
+  }
 
   /* Small phones: tighten outer spacing so nothing forces the page itself to be pinch-zoomed */
   /* Phones: fill the whole viewport edge-to-edge instead of floating a
@@ -422,7 +539,8 @@
     <div class="top-controls">
       <button class="back-btn hidden" id="backBtn">↩ رجوع</button>
       <div class="top-controls-side">
-        <button class="icon-btn" id="historyBtn">📜</button>
+        <button class="icon-btn" id="homeBtn" type="button">🏠</button>
+        <button class="icon-btn" id="historyBtn" type="button">📜</button>
         <button class="lang-btn" id="langBtn">English</button>
       </div>
     </div>
@@ -456,7 +574,8 @@
       <div class="wp-label"><span id="wpLabel">تقدمك</span><span><b id="worldKnown">0</b> / <span id="worldTotal">0</span></span></div>
       <div class="bar-track"><div class="bar-fill" id="worldBar" style="width:0%"></div></div>
     </div>
-    <div class="continent-grid" id="continentGrid"></div>
+    <div class="cont-tabs" id="continentTabs" role="tablist"></div>
+    <div class="continent-grid" id="continentGrid" role="tabpanel"></div>
   </div>
 
   <!-- Screen 5: the actual game -->
@@ -543,7 +662,7 @@
 
   <!-- Screen 7: session history (rounds played + mistakes), for self-review -->
   <div id="historyScreen" class="hidden">
-    <div class="pl-title" id="historyTitle" style="text-align:center;color:var(--gold);letter-spacing:2px;font-size:11px;text-transform:uppercase;margin-bottom:12px;"></div>
+    <div class="history-title" id="historyTitle"></div>
     <div id="historyRows"></div>
     <div class="history-note" id="historyNote"></div>
   </div>
@@ -1115,6 +1234,8 @@ const STR = {
   ar: {
     eyebrow: "جواز السفر العالمي", title: "خمّن العلم", back: "↩ رجوع", langBtn: "English",
     wpLabel: "تقدمك", world: "العالم كله", knownSuffix: "دولة اتعرفت", blocDivider: "أو اختار تصنيف تاني",
+    tabContinents: "🌍 قارات", tabUnions: "🌐 اتحادات", tabLanguages: "🗣️ لغات", tabHistory: "📜 تاريخية وحكم",
+    tabsLabel: "تصنيفات المناطق", homeLabel: "القائمة الرئيسية",
     best: n => `أعلى نتيجة: ${n}`, bestStreak: n => `أعلى تتابع: ${n}`,
 
     categoryFlags: "🏳️ أعلام", categoryFlagsDesc: "خمّن الدولة من علمها",
@@ -1191,6 +1312,8 @@ const STR = {
   en: {
     eyebrow: "World Passport", title: "Guess the Flag", back: "↩ Back", langBtn: "العربية",
     wpLabel: "Your progress", world: "Whole World", knownSuffix: "countries known", blocDivider: "Or pick another grouping",
+    tabContinents: "🌍 Continents", tabUnions: "🌐 Unions", tabLanguages: "🗣️ Languages", tabHistory: "📜 History & Rule",
+    tabsLabel: "Region groups", homeLabel: "Main menu",
     best: n => `Best score: ${n}`, bestStreak: n => `Best streak: ${n}`,
 
     categoryFlags: "🏳️ Flags", categoryFlagsDesc: "Guess the country from its flag",
@@ -1680,7 +1803,9 @@ const gameArea = document.getElementById('gameArea');
 const endScreen = document.getElementById('endScreen');
 const historyScreen = document.getElementById('historyScreen');
 
+const passport = document.querySelector('.passport');
 const backBtn = document.getElementById('backBtn');
+const homeBtn = document.getElementById('homeBtn');
 const langBtn = document.getElementById('langBtn');
 const historyBtn = document.getElementById('historyBtn');
 const eyebrowText = document.getElementById('eyebrowText');
@@ -1691,6 +1816,7 @@ const speedGrid = document.getElementById('speedGrid');
 const timeGrid = document.getElementById('timeGrid');
 const formatGrid = document.getElementById('formatGrid');
 const continentGrid = document.getElementById('continentGrid');
+const continentTabs = document.getElementById('continentTabs');
 const wpLabel = document.getElementById('wpLabel');
 const worldKnownEl = document.getElementById('worldKnown');
 const worldTotalEl = document.getElementById('worldTotal');
@@ -1762,22 +1888,48 @@ const ALL_SCREENS = [categoryScreen, speedScreen, timeScreen, formatScreen, cont
 let screenStack = [];
 let currentScreenEl = categoryScreen;
 
+// Screens differ a lot in height (a 3-card tab vs. a 12-card tab, the game
+// vs. the menu). Always land at the top so no stale scroll offset from the
+// previous screen/tab hides the first row.
+function resetScroll() {
+  // The element that actually scrolls is <body> (html/body both have overflow set),
+  // not .passport — so reset every candidate, otherwise the offset survives.
+  passport.scrollTop = 0;
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
 function showScreenRaw(el) {
   ALL_SCREENS.forEach(s => s.classList.add('hidden'));
   el.classList.remove('hidden');
   currentScreenEl = el;
   backBtn.classList.toggle('hidden', el === categoryScreen);
+  homeBtn.classList.toggle('is-inert', el === categoryScreen);
+  if (el === continentScreen) centerActiveContinentTab(); // needs the screen visible to measure
+  resetScroll();
 }
 function navTo(el) {
   if (currentScreenEl && currentScreenEl !== el) screenStack.push(currentScreenEl);
   showScreenRaw(el);
 }
 function goBack() {
-  if (isMapMode() && currentScreenEl === gameArea) stopBulletTimer();
+  if (currentScreenEl === gameArea) { stopBulletTimer(); stopMemoryTimer(); }
   const prev = screenStack.pop();
   showScreenRaw(prev || categoryScreen);
 }
 backBtn.addEventListener('click', goBack);
+
+// Jump straight to the main menu from any depth. Unlike goBack this also
+// stops any running round/stopwatch, so a bullet countdown or memory timer
+// can't keep ticking (and later end a round) behind the menu.
+homeBtn.addEventListener('click', () => {
+  stopBulletTimer();
+  stopMemoryTimer();
+  screenStack = [];
+  renderCategoryScreen();
+  showScreenRaw(categoryScreen);
+});
 
 historyBtn.addEventListener('click', () => {
   renderHistoryScreen();
@@ -1794,6 +1946,8 @@ function applyStaticText() {
   titleText.textContent = t().title;
   backBtn.textContent = t().back;
   langBtn.textContent = t().langBtn;
+  homeBtn.title = t().homeLabel; homeBtn.setAttribute('aria-label', t().homeLabel);
+  historyBtn.title = t().historyTitle; historyBtn.setAttribute('aria-label', t().historyTitle);
   wpLabel.textContent = t().wpLabel;
   sessionScoreLabelEl.textContent = t().sessionScoreLabel;
   typeSubmit.textContent = t().submit;
@@ -1950,52 +2104,123 @@ function renderFormatScreen() {
   });
 }
 
-/* ---- Screen 4: continent picker, with per-category progress + high score ---- */
-function renderContinentScreen() {
-  const knownSet = categoryKnownSet();
-  worldTotalEl.textContent = countries.length;
-  worldKnownEl.textContent = knownSet.size;
-  worldBar.style.width = `${(knownSet.size / countries.length) * 100}%`;
+/* ---- Screen 4: continent picker, with per-category progress + high score ----
+   The picker is split into four tabs so the list stays short:
+     continents (+ "whole world"), unions, languages, history & government.
+   Switching tabs only re-renders the card grid — the progress header and
+   the tab bar stay put. */
+const BLOC_KEYS_LANGUAGES = ['bloc_english', 'bloc_spanish', 'bloc_french'];
+const BLOC_KEYS_HISTORY   = ['bloc_monarchy', 'bloc_republic', 'bloc_ww2_axis', 'bloc_ww2_allies'];
+const CONTINENT_TABS = [
+  { id: 'continents', strKey: 'tabContinents', world: true,
+    match: r => !isBlocKey(r.key) },
+  // Unions = every bloc that isn't a language or a history/government one,
+  // so a newly added political/economic bloc lands here automatically.
+  { id: 'unions',     strKey: 'tabUnions',
+    match: r => isBlocKey(r.key) && !BLOC_KEYS_LANGUAGES.includes(r.key) && !BLOC_KEYS_HISTORY.includes(r.key) },
+  { id: 'languages',  strKey: 'tabLanguages',
+    match: r => BLOC_KEYS_LANGUAGES.includes(r.key) },
+  { id: 'history',    strKey: 'tabHistory',
+    match: r => BLOC_KEYS_HISTORY.includes(r.key) },
+];
+let activeContinentTab = 'continents';
 
+function regionBestLine(key) {
+  if (isMemoryMode()) {
+    const time = memoryBestTimes[memoryBestKey(key)];
+    return time === undefined ? t().memoryBestTime('—') : t().memoryBestTime(formatMemoryTime(time));
+  }
+  const best = highScores[highScoreKey(key)] || 0;
+  return selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best);
+}
+
+// Scroll the tab bar (not the page) so the active tab is visible on narrow phones.
+function centerActiveContinentTab() {
+  const btn = continentTabs.querySelector('.cont-tab[aria-selected="true"]');
+  if (!btn || continentTabs.scrollWidth <= continentTabs.clientWidth) return;
+  const box = continentTabs.getBoundingClientRect();
+  const b = btn.getBoundingClientRect();
+  continentTabs.scrollLeft += (b.left + b.width / 2) - (box.left + box.width / 2);
+}
+
+function syncContinentTabState() {
+  continentTabs.querySelectorAll('.cont-tab').forEach(btn => {
+    const on = btn.dataset.tab === activeContinentTab;
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    if (on) continentGrid.setAttribute('aria-labelledby', btn.id);
+  });
+  centerActiveContinentTab();
+}
+
+function renderContinentTabs() {
+  continentTabs.innerHTML = '';
+  continentTabs.setAttribute('aria-label', t().tabsLabel);
+  CONTINENT_TABS.forEach(tab => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cont-tab';
+    btn.id = `contTab_${tab.id}`;
+    btn.dataset.tab = tab.id;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-controls', 'continentGrid');
+    btn.textContent = t()[tab.strKey];
+    btn.addEventListener('click', () => selectContinentTab(tab.id));
+    continentTabs.appendChild(btn);
+  });
+  syncContinentTabState();
+}
+
+function selectContinentTab(id) {
+  activeContinentTab = id;
+  syncContinentTabState();
+  renderContinentGrid();
+  resetScroll(); // a long tab -> short tab must not leave an old scroll offset behind
+}
+
+function renderContinentGrid() {
+  const knownSet = categoryKnownSet();
+  const tab = CONTINENT_TABS.find(x => x.id === activeContinentTab) || CONTINENT_TABS[0];
   continentGrid.innerHTML = '';
 
-  function bestLine(key) {
-    if (isMemoryMode()) {
-      const time = memoryBestTimes[memoryBestKey(key)];
-      return time === undefined ? t().memoryBestTime('—') : t().memoryBestTime(formatMemoryTime(time));
-    }
-    const best = highScores[highScoreKey(key)] || 0;
-    return selectedSpeed === 'bullet' ? t().bestStreak(best) : t().best(best);
+  if (tab.world) {
+    const worldCard = document.createElement('button');
+    worldCard.className = 'continent-card world';
+    worldCard.innerHTML = `
+      <div class="cc-top"><span class="cc-emoji">🌐</span><span class="cc-name">${t().world}</span></div>
+      <div class="cc-count">${knownSet.size} / ${countries.length} ${t().knownSuffix}</div>
+      <div class="cc-best">${regionBestLine(null)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(knownSet.size/countries.length)*100}%"></div></div>
+    `;
+    worldCard.addEventListener('click', () => startGame(null));
+    continentGrid.appendChild(worldCard);
   }
 
-  const worldCard = document.createElement('button');
-  worldCard.className = 'continent-card world';
-  worldCard.innerHTML = `
-    <div class="cc-top"><span class="cc-emoji">🌐</span><span class="cc-name">${t().world}</span></div>
-    <div class="cc-count">${knownSet.size} / ${countries.length} ${t().knownSuffix}</div>
-    <div class="cc-best">${bestLine(null)}</div>
-    <div class="bar-track"><div class="bar-fill" style="width:${(knownSet.size/countries.length)*100}%"></div></div>
-  `;
-  worldCard.addEventListener('click', () => startGame(null));
-  continentGrid.appendChild(worldCard);
-
-  // Continents and blocs share one grid — the old "or pick another grouping"
-  // divider and its second grid are gone, so the blocs sit straight after the
-  // continents as equal options.
-  [...CONTINENTS, ...BLOCS].forEach(region => {
+  const regions = [...CONTINENTS, ...BLOCS].filter(tab.match);
+  regions.forEach((region, i) => {
     const total = countInContinent(region.key);
     const known = knownInContinent(region.key);
     const card = document.createElement('button');
     card.className = 'continent-card';
+    // Odd count -> let the last card span the row instead of sitting alone at half width.
+    if (regions.length % 2 === 1 && i === regions.length - 1) card.classList.add('wide');
     card.innerHTML = `
       <div class="cc-top"><span class="cc-emoji">${region.emoji}</span><span class="cc-name">${regionLabel(region.key)}</span></div>
       <div class="cc-count">${known} / ${total} ${t().knownSuffix}</div>
-      <div class="cc-best">${bestLine(region.key)}</div>
+      <div class="cc-best">${regionBestLine(region.key)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(known/total)*100}%"></div></div>
     `;
     card.addEventListener('click', () => startGame(region.key));
     continentGrid.appendChild(card);
   });
+}
+
+function renderContinentScreen() {
+  const knownSet = categoryKnownSet();
+  worldTotalEl.textContent = countries.length;
+  worldKnownEl.textContent = knownSet.size;
+  worldBar.style.width = `${(knownSet.size / countries.length) * 100}%`;
+  renderContinentTabs();
+  renderContinentGrid();
 }
 
 /* ---------------------------------------------------------------------
@@ -2040,8 +2265,12 @@ function isMemoryMode() { return currentMode === 'memory_country' || currentMode
 let bulletTimerHandle = null;
 let bulletRemaining = 0;
 
+let bulletDelayHandle = null;   // pending 350ms/900ms step after a bullet answer
 function stopBulletTimer() {
   if (bulletTimerHandle) { clearInterval(bulletTimerHandle); bulletTimerHandle = null; }
+  // Also cancel the short "show verdict, then continue/end" delay, so leaving
+  // the round (home/back) or ending it can't trigger a stray renderRound/endGame.
+  if (bulletDelayHandle) { clearTimeout(bulletDelayHandle); bulletDelayHandle = null; }
 }
 function updateTimerDisplay() {
   const m = Math.floor(bulletRemaining / 60), s = bulletRemaining % 60;
@@ -2856,7 +3085,8 @@ function handleAnswerResult(isCorrect, correctLabel) {
       showVerdict('correct', t().correctBadge);
       updateGameHeader();
       deckIndex++;
-      setTimeout(() => {
+      bulletDelayHandle = setTimeout(() => {
+        bulletDelayHandle = null;
         if (deckIndex >= deck.length) endGame('bullet_clear');
         else renderRound();
       }, 350);
@@ -2864,7 +3094,7 @@ function handleAnswerResult(isCorrect, correctLabel) {
       missedThisRound.push(currentCorrect);
       showVerdict('wrong', t().wrongBadge(correctLabel));
       updateGameHeader();
-      setTimeout(() => endGame('bullet_mistake'), 900);
+      bulletDelayHandle = setTimeout(() => { bulletDelayHandle = null; endGame('bullet_mistake'); }, 900);
     }
     return;
   }
