@@ -253,6 +253,11 @@
       inset 0 0 0 1px rgba(0,0,0,0.4);
   }
   .flag-frame img { width: 100%; height: 100%; object-fit: cover; display: block; transition: none; }
+  /* Grey pulsing placeholder while a flag loads (removed on load/error) */
+  img.flag-loading { background-color: rgba(150,155,165,0.28); color: transparent; animation: flagSkeleton 1.1s ease-in-out infinite; }
+  .missed-chip img.flag-loading { display: inline-block; }
+  @keyframes flagSkeleton { 0%,100% { background-color: rgba(150,155,165,0.22); } 50% { background-color: rgba(150,155,165,0.42); } }
+  @media (prefers-reduced-motion: reduce) { img.flag-loading { animation: none; } }
   .prompt { font-size: 0.75rem; color: rgba(244,236,216,0.5); letter-spacing: 0.0625rem; }
 
   /* Result badge sits below the flag/map (never on top of it) so it's always visible */
@@ -333,6 +338,17 @@
     min-height: 2.875rem; box-shadow: var(--shadow-btn);
   }
   .next-btn.ready { opacity: 1; pointer-events: auto; }
+  .foot-actions { display: flex; align-items: center; gap: 8px; }
+  .confirm-btn {
+    background: var(--green); color: #fff; border: none; border-radius: 999px;
+    width: 2.875rem; height: 2.875rem; min-height: 2.875rem; font-size: 1.25rem; font-weight: 800;
+    cursor: pointer; font-family: inherit; line-height: 1; padding: 0;
+    opacity: 0; pointer-events: none; box-shadow: var(--shadow-btn);
+    transition: opacity 0.2s, transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+  .confirm-btn.ready { opacity: 1; pointer-events: auto; }
+  .confirm-btn:hover { transform: scale(1.06); filter: brightness(1.1); box-shadow: var(--shadow-lift); }
+  .confirm-btn:active { transform: scale(0.96); }
   .next-btn:hover { transform: scale(1.02); filter: brightness(1.08); box-shadow: var(--shadow-lift); }
   .next-btn:active { transform: scale(0.98); }
 
@@ -414,6 +430,13 @@
   }
   .map-marker.correct { fill: var(--green); fill-opacity: 0.85; }
   .map-marker.incorrect { fill: var(--stamp-red); fill-opacity: 0.85; }
+  /* Pending (not yet confirmed) selection: a thick gold outline drawn as a
+     non-interactive overlay on top, so it never clashes with the green/red
+     result fills and can't be hidden by neighbouring shapes. */
+  .map-selection {
+    fill: rgba(230,195,104,0.28); stroke: var(--gold-bright); stroke-width: 3.5;
+    vector-effect: non-scaling-stroke; pointer-events: none; stroke-linejoin: round;
+  }
 
   .map-controls {
     position: absolute; bottom: 10px; left: 10px;
@@ -607,7 +630,10 @@
 
     <div class="foot-row" id="footRow">
       <button class="hint-btn hidden" id="hintBtn">💡 تلميح</button>
-      <button class="next-btn" id="nextBtn">التالي ←</button>
+      <div class="foot-actions">
+        <button class="confirm-btn hidden" id="mapConfirmBtn" type="button" title="تأكيد الاختيار" aria-label="تأكيد الاختيار">✓</button>
+        <button class="next-btn" id="nextBtn">التالي ←</button>
+      </div>
     </div>
 
     <div class="study-controls hidden" id="studyControls">
@@ -681,232 +707,232 @@
    --------------------------------------------------------------------- */
 const countries = [
   // ===== أفريقيا =====
-  {code:"dz",cont:"africa",ar:"الجزائر",en:"Algeria",capAr:"الجزائر",capEn:"Algiers"},
-  {code:"ao",cont:"africa",ar:"أنغولا",en:"Angola",capAr:"لواندا",capEn:"Luanda"},
-  {code:"bj",cont:"africa",ar:"بنين",en:"Benin",capAr:"بورتو نوفو",capEn:"Porto-Novo"},
-  {code:"bw",cont:"africa",ar:"بوتسوانا",en:"Botswana",capAr:"غابورون",capEn:"Gaborone"},
-  {code:"bf",cont:"africa",ar:"بوركينا فاسو",en:"Burkina Faso",capAr:"واغادوغو",capEn:"Ouagadougou"},
-  {code:"bi",cont:"africa",ar:"بوروندي",en:"Burundi",capAr:"جيتيغا",capEn:"Gitega"},
-  {code:"cv",cont:"africa",ar:"الرأس الأخضر",en:"Cape Verde",capAr:"برايا",capEn:"Praia"},
-  {code:"cm",cont:"africa",ar:"الكاميرون",en:"Cameroon",capAr:"ياوندي",capEn:"Yaoundé"},
-  {code:"cf",cont:"africa",ar:"جمهورية أفريقيا الوسطى",en:"Central African Republic",capAr:"بانغي",capEn:"Bangui"},
-  {code:"td",cont:"africa",ar:"تشاد",en:"Chad",capAr:"نجامينا",capEn:"N'Djamena"},
-  {code:"km",cont:"africa",ar:"جزر القمر",en:"Comoros",capAr:"موروني",capEn:"Moroni"},
-  {code:"cg",cont:"africa",ar:"الكونغو",en:"Congo",capAr:"برازافيل",capEn:"Brazzaville"},
-  {code:"cd",cont:"africa",ar:"جمهورية الكونغو الديمقراطية",en:"DR Congo",capAr:"كينشاسا",capEn:"Kinshasa"},
-  {code:"dj",cont:"africa",ar:"جيبوتي",en:"Djibouti",capAr:"جيبوتي",capEn:"Djibouti"},
-  {code:"eg",cont:"africa",ar:"مصر",en:"Egypt",capAr:"القاهرة",capEn:"Cairo"},
-  {code:"gq",cont:"africa",ar:"غينيا الاستوائية",en:"Equatorial Guinea",capAr:"مالابو",capEn:"Malabo"},
-  {code:"er",cont:"africa",ar:"إريتريا",en:"Eritrea",capAr:"أسمرة",capEn:"Asmara"},
-  {code:"sz",cont:"africa",ar:"إسواتيني",en:"Eswatini",capAr:"مبابان",capEn:"Mbabane"},
-  {code:"et",cont:"africa",ar:"إثيوبيا",en:"Ethiopia",capAr:"أديس أبابا",capEn:"Addis Ababa"},
-  {code:"ga",cont:"africa",ar:"الغابون",en:"Gabon",capAr:"ليبرفيل",capEn:"Libreville"},
-  {code:"gm",cont:"africa",ar:"غامبيا",en:"Gambia",capAr:"بانجول",capEn:"Banjul"},
-  {code:"gh",cont:"africa",ar:"غانا",en:"Ghana",capAr:"أكرا",capEn:"Accra"},
-  {code:"gn",cont:"africa",ar:"غينيا",en:"Guinea",capAr:"كوناكري",capEn:"Conakry"},
-  {code:"gw",cont:"africa",ar:"غينيا بيساو",en:"Guinea-Bissau",capAr:"بيساو",capEn:"Bissau"},
-  {code:"ci",cont:"africa",ar:"ساحل العاج",en:"Ivory Coast",capAr:"ياموسوكرو",capEn:"Yamoussoukro"},
-  {code:"ke",cont:"africa",ar:"كينيا",en:"Kenya",capAr:"نيروبي",capEn:"Nairobi"},
-  {code:"ls",cont:"africa",ar:"ليسوتو",en:"Lesotho",capAr:"ماسيرو",capEn:"Maseru"},
-  {code:"lr",cont:"africa",ar:"ليبيريا",en:"Liberia",capAr:"مونروفيا",capEn:"Monrovia"},
-  {code:"ly",cont:"africa",ar:"ليبيا",en:"Libya",capAr:"طرابلس",capEn:"Tripoli"},
-  {code:"mg",cont:"africa",ar:"مدغشقر",en:"Madagascar",capAr:"أنتاناناريفو",capEn:"Antananarivo"},
-  {code:"mw",cont:"africa",ar:"مالاوي",en:"Malawi",capAr:"ليلونغوي",capEn:"Lilongwe"},
-  {code:"ml",cont:"africa",ar:"مالي",en:"Mali",capAr:"باماكو",capEn:"Bamako"},
-  {code:"mr",cont:"africa",ar:"موريتانيا",en:"Mauritania",capAr:"نواكشوط",capEn:"Nouakchott"},
-  {code:"mu",cont:"africa",ar:"موريشيوس",en:"Mauritius",capAr:"بورت لويس",capEn:"Port Louis"},
-  {code:"ma",cont:"africa",ar:"المغرب",en:"Morocco",capAr:"الرباط",capEn:"Rabat"},
-  {code:"mz",cont:"africa",ar:"موزمبيق",en:"Mozambique",capAr:"مابوتو",capEn:"Maputo"},
-  {code:"na",cont:"africa",ar:"ناميبيا",en:"Namibia",capAr:"ويندهوك",capEn:"Windhoek"},
-  {code:"ne",cont:"africa",ar:"النيجر",en:"Niger",capAr:"نيامي",capEn:"Niamey"},
-  {code:"ng",cont:"africa",ar:"نيجيريا",en:"Nigeria",capAr:"أبوجا",capEn:"Abuja"},
-  {code:"rw",cont:"africa",ar:"رواندا",en:"Rwanda",capAr:"كيغالي",capEn:"Kigali"},
-  {code:"st",cont:"africa",ar:"ساو تومي وبرينسيبي",en:"Sao Tome and Principe",capAr:"ساو تومي",capEn:"São Tomé"},
-  {code:"sn",cont:"africa",ar:"السنغال",en:"Senegal",capAr:"داكار",capEn:"Dakar"},
-  {code:"sc",cont:"africa",ar:"سيشل",en:"Seychelles",capAr:"فيكتوريا",capEn:"Victoria"},
-  {code:"sl",cont:"africa",ar:"سيراليون",en:"Sierra Leone",capAr:"فريتاون",capEn:"Freetown"},
-  {code:"so",cont:"africa",ar:"الصومال",en:"Somalia",capAr:"مقديشو",capEn:"Mogadishu"},
-  {code:"za",cont:"africa",ar:"جنوب أفريقيا",en:"South Africa",capAr:"بريتوريا",capEn:"Pretoria"},
-  {code:"ss",cont:"africa",ar:"جنوب السودان",en:"South Sudan",capAr:"جوبا",capEn:"Juba"},
-  {code:"sd",cont:"africa",ar:"السودان",en:"Sudan",capAr:"الخرطوم",capEn:"Khartoum"},
-  {code:"tz",cont:"africa",ar:"تنزانيا",en:"Tanzania",capAr:"دودوما",capEn:"Dodoma"},
-  {code:"tg",cont:"africa",ar:"توغو",en:"Togo",capAr:"لومي",capEn:"Lomé"},
-  {code:"tn",cont:"africa",ar:"تونس",en:"Tunisia",capAr:"تونس",capEn:"Tunis"},
-  {code:"ug",cont:"africa",ar:"أوغندا",en:"Uganda",capAr:"كمبالا",capEn:"Kampala"},
-  {code:"zm",cont:"africa",ar:"زامبيا",en:"Zambia",capAr:"لوساكا",capEn:"Lusaka"},
-  {code:"zw",cont:"africa",ar:"زيمبابوي",en:"Zimbabwe",capAr:"هراري",capEn:"Harare"},
+  {code:"dz",cont:"africa",ar:"الجزائر",en:"Algeria",capAr:"الجزائر",capEn:"Algiers",curAr:"دينار جزائري",curEn:"Algerian Dinar",curCode:"DZD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"ao",cont:"africa",ar:"أنغولا",en:"Angola",capAr:"لواندا",capEn:"Luanda",curAr:"كوانزا أنغولي",curEn:"Angolan Kwanza",curCode:"AOA",curShortAr:"كوانزا",curShortEn:"Kwanza"},
+  {code:"bj",cont:"africa",ar:"بنين",en:"Benin",capAr:"بورتو نوفو",capEn:"Porto-Novo",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"bw",cont:"africa",ar:"بوتسوانا",en:"Botswana",capAr:"غابورون",capEn:"Gaborone",curAr:"بولا بوتسواني",curEn:"Botswana Pula",curCode:"BWP",curShortAr:"بولا",curShortEn:"Pula"},
+  {code:"bf",cont:"africa",ar:"بوركينا فاسو",en:"Burkina Faso",capAr:"واغادوغو",capEn:"Ouagadougou",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"bi",cont:"africa",ar:"بوروندي",en:"Burundi",capAr:"جيتيغا",capEn:"Gitega",curAr:"فرنك بوروندي",curEn:"Burundian Franc",curCode:"BIF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"cv",cont:"africa",ar:"الرأس الأخضر",en:"Cape Verde",capAr:"برايا",capEn:"Praia",curAr:"إسكودو الرأس الأخضر",curEn:"Cape Verdean Escudo",curCode:"CVE",curShortAr:"إسكودو",curShortEn:"Escudo"},
+  {code:"cm",cont:"africa",ar:"الكاميرون",en:"Cameroon",capAr:"ياوندي",capEn:"Yaoundé",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"cf",cont:"africa",ar:"جمهورية أفريقيا الوسطى",en:"Central African Republic",capAr:"بانغي",capEn:"Bangui",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"td",cont:"africa",ar:"تشاد",en:"Chad",capAr:"نجامينا",capEn:"N'Djamena",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"km",cont:"africa",ar:"جزر القمر",en:"Comoros",capAr:"موروني",capEn:"Moroni",curAr:"فرنك جزر القمر",curEn:"Comorian Franc",curCode:"KMF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"cg",cont:"africa",ar:"الكونغو",en:"Congo",capAr:"برازافيل",capEn:"Brazzaville",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"cd",cont:"africa",ar:"جمهورية الكونغو الديمقراطية",en:"DR Congo",capAr:"كينشاسا",capEn:"Kinshasa",curAr:"فرنك كونغولي",curEn:"Congolese Franc",curCode:"CDF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"dj",cont:"africa",ar:"جيبوتي",en:"Djibouti",capAr:"جيبوتي",capEn:"Djibouti",curAr:"فرنك جيبوتي",curEn:"Djiboutian Franc",curCode:"DJF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"eg",cont:"africa",ar:"مصر",en:"Egypt",capAr:"القاهرة",capEn:"Cairo",curAr:"جنيه مصري",curEn:"Egyptian Pound",curCode:"EGP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"gq",cont:"africa",ar:"غينيا الاستوائية",en:"Equatorial Guinea",capAr:"مالابو",capEn:"Malabo",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"er",cont:"africa",ar:"إريتريا",en:"Eritrea",capAr:"أسمرة",capEn:"Asmara",curAr:"ناكفا إريتري",curEn:"Eritrean Nakfa",curCode:"ERN",curShortAr:"ناكفا",curShortEn:"Nakfa"},
+  {code:"sz",cont:"africa",ar:"إسواتيني",en:"Eswatini",capAr:"مبابان",capEn:"Mbabane",curAr:"ليلانجيني سوازيلندي",curEn:"Swazi Lilangeni",curCode:"SZL",curShortAr:"ليلانجيني",curShortEn:"Lilangeni"},
+  {code:"et",cont:"africa",ar:"إثيوبيا",en:"Ethiopia",capAr:"أديس أبابا",capEn:"Addis Ababa",curAr:"بير إثيوبي",curEn:"Ethiopian Birr",curCode:"ETB",curShortAr:"بير",curShortEn:"Birr"},
+  {code:"ga",cont:"africa",ar:"الغابون",en:"Gabon",capAr:"ليبرفيل",capEn:"Libreville",curAr:"فرنك وسط أفريقيا (سيفا)",curEn:"Central African CFA Franc",curCode:"XAF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"gm",cont:"africa",ar:"غامبيا",en:"Gambia",capAr:"بانجول",capEn:"Banjul",curAr:"دالاسي غامبي",curEn:"Gambian Dalasi",curCode:"GMD",curShortAr:"دالاسي",curShortEn:"Dalasi"},
+  {code:"gh",cont:"africa",ar:"غانا",en:"Ghana",capAr:"أكرا",capEn:"Accra",curAr:"سيدي غاني",curEn:"Ghanaian Cedi",curCode:"GHS",curShortAr:"سيدي",curShortEn:"Cedi"},
+  {code:"gn",cont:"africa",ar:"غينيا",en:"Guinea",capAr:"كوناكري",capEn:"Conakry",curAr:"فرنك غيني",curEn:"Guinean Franc",curCode:"GNF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"gw",cont:"africa",ar:"غينيا بيساو",en:"Guinea-Bissau",capAr:"بيساو",capEn:"Bissau",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"ci",cont:"africa",ar:"ساحل العاج",en:"Ivory Coast",capAr:"ياموسوكرو",capEn:"Yamoussoukro",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"ke",cont:"africa",ar:"كينيا",en:"Kenya",capAr:"نيروبي",capEn:"Nairobi",curAr:"شلن كيني",curEn:"Kenyan Shilling",curCode:"KES",curShortAr:"شلن",curShortEn:"Shilling"},
+  {code:"ls",cont:"africa",ar:"ليسوتو",en:"Lesotho",capAr:"ماسيرو",capEn:"Maseru",curAr:"لوتي ليسوتو",curEn:"Lesotho Loti",curCode:"LSL",curShortAr:"لوتي",curShortEn:"Loti"},
+  {code:"lr",cont:"africa",ar:"ليبيريا",en:"Liberia",capAr:"مونروفيا",capEn:"Monrovia",curAr:"دولار ليبيري",curEn:"Liberian Dollar",curCode:"LRD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"ly",cont:"africa",ar:"ليبيا",en:"Libya",capAr:"طرابلس",capEn:"Tripoli",curAr:"دينار ليبي",curEn:"Libyan Dinar",curCode:"LYD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"mg",cont:"africa",ar:"مدغشقر",en:"Madagascar",capAr:"أنتاناناريفو",capEn:"Antananarivo",curAr:"أرياري مدغشقري",curEn:"Malagasy Ariary",curCode:"MGA",curShortAr:"أرياري",curShortEn:"Ariary"},
+  {code:"mw",cont:"africa",ar:"مالاوي",en:"Malawi",capAr:"ليلونغوي",capEn:"Lilongwe",curAr:"كواشا ملاوي",curEn:"Malawian Kwacha",curCode:"MWK",curShortAr:"كواشا",curShortEn:"Kwacha"},
+  {code:"ml",cont:"africa",ar:"مالي",en:"Mali",capAr:"باماكو",capEn:"Bamako",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"mr",cont:"africa",ar:"موريتانيا",en:"Mauritania",capAr:"نواكشوط",capEn:"Nouakchott",curAr:"أوقية موريتانية",curEn:"Mauritanian Ouguiya",curCode:"MRU",curShortAr:"أوقية",curShortEn:"Ouguiya"},
+  {code:"mu",cont:"africa",ar:"موريشيوس",en:"Mauritius",capAr:"بورت لويس",capEn:"Port Louis",curAr:"روبية موريشيوسية",curEn:"Mauritian Rupee",curCode:"MUR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"ma",cont:"africa",ar:"المغرب",en:"Morocco",capAr:"الرباط",capEn:"Rabat",curAr:"درهم مغربي",curEn:"Moroccan Dirham",curCode:"MAD",curShortAr:"درهم",curShortEn:"Dirham"},
+  {code:"mz",cont:"africa",ar:"موزمبيق",en:"Mozambique",capAr:"مابوتو",capEn:"Maputo",curAr:"متيكال موزمبيقي",curEn:"Mozambican Metical",curCode:"MZN",curShortAr:"متيكال",curShortEn:"Metical"},
+  {code:"na",cont:"africa",ar:"ناميبيا",en:"Namibia",capAr:"ويندهوك",capEn:"Windhoek",curAr:"دولار ناميبي",curEn:"Namibian Dollar",curCode:"NAD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"ne",cont:"africa",ar:"النيجر",en:"Niger",capAr:"نيامي",capEn:"Niamey",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"ng",cont:"africa",ar:"نيجيريا",en:"Nigeria",capAr:"أبوجا",capEn:"Abuja",curAr:"نايرا نيجيري",curEn:"Nigerian Naira",curCode:"NGN",curShortAr:"نايرا",curShortEn:"Naira"},
+  {code:"rw",cont:"africa",ar:"رواندا",en:"Rwanda",capAr:"كيغالي",capEn:"Kigali",curAr:"فرنك رواندي",curEn:"Rwandan Franc",curCode:"RWF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"st",cont:"africa",ar:"ساو تومي وبرينسيبي",en:"Sao Tome and Principe",capAr:"ساو تومي",capEn:"São Tomé",curAr:"دوبرا ساو تومي",curEn:"São Tomé and Príncipe Dobra",curCode:"STN",curShortAr:"دوبرا",curShortEn:"Dobra"},
+  {code:"sn",cont:"africa",ar:"السنغال",en:"Senegal",capAr:"داكار",capEn:"Dakar",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"sc",cont:"africa",ar:"سيشل",en:"Seychelles",capAr:"فيكتوريا",capEn:"Victoria",curAr:"روبية سيشيلية",curEn:"Seychellois Rupee",curCode:"SCR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"sl",cont:"africa",ar:"سيراليون",en:"Sierra Leone",capAr:"فريتاون",capEn:"Freetown",curAr:"ليون سيراليوني",curEn:"Sierra Leonean Leone",curCode:"SLE",curShortAr:"ليون",curShortEn:"Leone"},
+  {code:"so",cont:"africa",ar:"الصومال",en:"Somalia",capAr:"مقديشو",capEn:"Mogadishu",curAr:"شلن صومالي",curEn:"Somali Shilling",curCode:"SOS",curShortAr:"شلن",curShortEn:"Shilling"},
+  {code:"za",cont:"africa",ar:"جنوب أفريقيا",en:"South Africa",capAr:"بريتوريا",capEn:"Pretoria",altCapAr:["كيب تاون","بلومفونتين"],altCapEn:["Cape Town","Bloemfontein"],curAr:"راند جنوب أفريقي",curEn:"South African Rand",curCode:"ZAR",curShortAr:"راند",curShortEn:"Rand"},
+  {code:"ss",cont:"africa",ar:"جنوب السودان",en:"South Sudan",capAr:"جوبا",capEn:"Juba",curAr:"جنيه جنوب سوداني",curEn:"South Sudanese Pound",curCode:"SSP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"sd",cont:"africa",ar:"السودان",en:"Sudan",capAr:"الخرطوم",capEn:"Khartoum",curAr:"جنيه سوداني",curEn:"Sudanese Pound",curCode:"SDG",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"tz",cont:"africa",ar:"تنزانيا",en:"Tanzania",capAr:"دودوما",capEn:"Dodoma",curAr:"شلن تنزاني",curEn:"Tanzanian Shilling",curCode:"TZS",curShortAr:"شلن",curShortEn:"Shilling"},
+  {code:"tg",cont:"africa",ar:"توغو",en:"Togo",capAr:"لومي",capEn:"Lomé",curAr:"فرنك غرب أفريقيا (سيفا)",curEn:"West African CFA Franc",curCode:"XOF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"tn",cont:"africa",ar:"تونس",en:"Tunisia",capAr:"تونس",capEn:"Tunis",curAr:"دينار تونسي",curEn:"Tunisian Dinar",curCode:"TND",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"ug",cont:"africa",ar:"أوغندا",en:"Uganda",capAr:"كمبالا",capEn:"Kampala",curAr:"شلن أوغندي",curEn:"Ugandan Shilling",curCode:"UGX",curShortAr:"شلن",curShortEn:"Shilling"},
+  {code:"zm",cont:"africa",ar:"زامبيا",en:"Zambia",capAr:"لوساكا",capEn:"Lusaka",curAr:"كواشا زامبي",curEn:"Zambian Kwacha",curCode:"ZMW",curShortAr:"كواشا",curShortEn:"Kwacha"},
+  {code:"zw",cont:"africa",ar:"زيمبابوي",en:"Zimbabwe",capAr:"هراري",capEn:"Harare",curAr:"زيمبابوي جولد",curEn:"Zimbabwe Gold",curCode:"ZWG",curShortAr:"زيمبابوي جولد",curShortEn:"Zimbabwe Gold"},
   // ===== آسيا =====
-  {code:"af",cont:"asia",ar:"أفغانستان",en:"Afghanistan",capAr:"كابول",capEn:"Kabul"},
-  {code:"am",cont:"asia",ar:"أرمينيا",en:"Armenia",capAr:"يريفان",capEn:"Yerevan"},
-  {code:"az",cont:"asia",ar:"أذربيجان",en:"Azerbaijan",capAr:"باكو",capEn:"Baku"},
-  {code:"bh",cont:"asia",ar:"البحرين",en:"Bahrain",capAr:"المنامة",capEn:"Manama"},
-  {code:"bd",cont:"asia",ar:"بنغلاديش",en:"Bangladesh",capAr:"دكا",capEn:"Dhaka"},
-  {code:"bt",cont:"asia",ar:"بوتان",en:"Bhutan",capAr:"تيمفو",capEn:"Thimphu"},
-  {code:"bn",cont:"asia",ar:"بروناي",en:"Brunei",capAr:"بندر سري بكاوان",capEn:"Bandar Seri Begawan"},
-  {code:"kh",cont:"asia",ar:"كمبوديا",en:"Cambodia",capAr:"بنوم بنه",capEn:"Phnom Penh"},
-  {code:"cn",cont:"asia",ar:"الصين",en:"China",capAr:"بكين",capEn:"Beijing"},
-  {code:"cy",cont:"asia",ar:"قبرص",en:"Cyprus",capAr:"نيقوسيا",capEn:"Nicosia"},
-  {code:"ge",cont:"asia",ar:"جورجيا",en:"Georgia",capAr:"تبليسي",capEn:"Tbilisi"},
-  {code:"in",cont:"asia",ar:"الهند",en:"India",capAr:"نيودلهي",capEn:"New Delhi"},
-  {code:"id",cont:"asia",ar:"إندونيسيا",en:"Indonesia",capAr:"جاكرتا",capEn:"Jakarta"},
-  {code:"ir",cont:"asia",ar:"إيران",en:"Iran",capAr:"طهران",capEn:"Tehran"},
-  {code:"iq",cont:"asia",ar:"العراق",en:"Iraq",capAr:"بغداد",capEn:"Baghdad"},
-  {code:"jp",cont:"asia",ar:"اليابان",en:"Japan",capAr:"طوكيو",capEn:"Tokyo"},
-  {code:"jo",cont:"asia",ar:"الأردن",en:"Jordan",capAr:"عمّان",capEn:"Amman"},
-  {code:"kz",cont:"asia",ar:"كازاخستان",en:"Kazakhstan",capAr:"أستانا",capEn:"Astana"},
-  {code:"kw",cont:"asia",ar:"الكويت",en:"Kuwait",capAr:"مدينة الكويت",capEn:"Kuwait City"},
-  {code:"kg",cont:"asia",ar:"قيرغيزستان",en:"Kyrgyzstan",capAr:"بيشكيك",capEn:"Bishkek"},
-  {code:"la",cont:"asia",ar:"لاوس",en:"Laos",capAr:"فيينتيان",capEn:"Vientiane"},
-  {code:"lb",cont:"asia",ar:"لبنان",en:"Lebanon",capAr:"بيروت",capEn:"Beirut"},
-  {code:"my",cont:"asia",ar:"ماليزيا",en:"Malaysia",capAr:"كوالالمبور",capEn:"Kuala Lumpur"},
-  {code:"mv",cont:"asia",ar:"جزر المالديف",en:"Maldives",capAr:"ماليه",capEn:"Malé"},
-  {code:"mn",cont:"asia",ar:"منغوليا",en:"Mongolia",capAr:"أولان باتور",capEn:"Ulaanbaatar"},
-  {code:"mm",cont:"asia",ar:"ميانمار",en:"Myanmar",capAr:"نايبيداو",capEn:"Naypyidaw"},
-  {code:"np",cont:"asia",ar:"نيبال",en:"Nepal",capAr:"كاتماندو",capEn:"Kathmandu"},
-  {code:"kp",cont:"asia",ar:"كوريا الشمالية",en:"North Korea",capAr:"بيونغ يانغ",capEn:"Pyongyang"},
-  {code:"om",cont:"asia",ar:"عُمان",en:"Oman",capAr:"مسقط",capEn:"Muscat"},
-  {code:"pk",cont:"asia",ar:"باكستان",en:"Pakistan",capAr:"إسلام آباد",capEn:"Islamabad"},
-  {code:"ps",cont:"asia",ar:"فلسطين",en:"Palestine",capAr:"القدس",capEn:"Jerusalem"},
-  {code:"ph",cont:"asia",ar:"الفلبين",en:"Philippines",capAr:"مانيلا",capEn:"Manila"},
-  {code:"qa",cont:"asia",ar:"قطر",en:"Qatar",capAr:"الدوحة",capEn:"Doha"},
-  {code:"sa",cont:"asia",ar:"السعودية",en:"Saudi Arabia",capAr:"الرياض",capEn:"Riyadh"},
-  {code:"sg",cont:"asia",ar:"سنغافورة",en:"Singapore",capAr:"سنغافورة",capEn:"Singapore"},
-  {code:"kr",cont:"asia",ar:"كوريا الجنوبية",en:"South Korea",capAr:"سيول",capEn:"Seoul"},
-  {code:"lk",cont:"asia",ar:"سريلانكا",en:"Sri Lanka",capAr:"كولومبو",capEn:"Colombo"},
-  {code:"sy",cont:"asia",ar:"سوريا",en:"Syria",capAr:"دمشق",capEn:"Damascus"},
-  {code:"tw",cont:"asia",ar:"تايوان",en:"Taiwan",capAr:"تايبيه",capEn:"Taipei"},
-  {code:"tj",cont:"asia",ar:"طاجيكستان",en:"Tajikistan",capAr:"دوشنبه",capEn:"Dushanbe"},
-  {code:"th",cont:"asia",ar:"تايلاند",en:"Thailand",capAr:"بانكوك",capEn:"Bangkok"},
-  {code:"tl",cont:"asia",ar:"تيمور الشرقية",en:"Timor-Leste",capAr:"ديلي",capEn:"Dili"},
-  {code:"tr",cont:"asia",ar:"تركيا",en:"Turkey",capAr:"أنقرة",capEn:"Ankara"},
-  {code:"tm",cont:"asia",ar:"تركمانستان",en:"Turkmenistan",capAr:"عشق آباد",capEn:"Ashgabat"},
-  {code:"ae",cont:"asia",ar:"الإمارات",en:"UAE",capAr:"أبوظبي",capEn:"Abu Dhabi"},
-  {code:"uz",cont:"asia",ar:"أوزبكستان",en:"Uzbekistan",capAr:"طشقند",capEn:"Tashkent"},
-  {code:"vn",cont:"asia",ar:"فيتنام",en:"Vietnam",capAr:"هانوي",capEn:"Hanoi"},
-  {code:"ye",cont:"asia",ar:"اليمن",en:"Yemen",capAr:"صنعاء",capEn:"Sana'a"},
+  {code:"af",cont:"asia",ar:"أفغانستان",en:"Afghanistan",capAr:"كابول",capEn:"Kabul",curAr:"أفغاني أفغاني",curEn:"Afghan Afghani",curCode:"AFN",curShortAr:"أفغاني",curShortEn:"Afghani"},
+  {code:"am",cont:"asia",ar:"أرمينيا",en:"Armenia",capAr:"يريفان",capEn:"Yerevan",curAr:"درام أرمني",curEn:"Armenian Dram",curCode:"AMD",curShortAr:"درام",curShortEn:"Dram"},
+  {code:"az",cont:"asia",ar:"أذربيجان",en:"Azerbaijan",capAr:"باكو",capEn:"Baku",curAr:"منات أذربيجاني",curEn:"Azerbaijani Manat",curCode:"AZN",curShortAr:"منات",curShortEn:"Manat"},
+  {code:"bh",cont:"asia",ar:"البحرين",en:"Bahrain",capAr:"المنامة",capEn:"Manama",curAr:"دينار بحريني",curEn:"Bahraini Dinar",curCode:"BHD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"bd",cont:"asia",ar:"بنغلاديش",en:"Bangladesh",capAr:"دكا",capEn:"Dhaka",curAr:"تاكا بنغلاديشية",curEn:"Bangladeshi Taka",curCode:"BDT",curShortAr:"تاكا",curShortEn:"Taka"},
+  {code:"bt",cont:"asia",ar:"بوتان",en:"Bhutan",capAr:"تيمفو",capEn:"Thimphu",curAr:"نغولترم بوتاني",curEn:"Bhutanese Ngultrum",curCode:"BTN",curShortAr:"نغولترم",curShortEn:"Ngultrum"},
+  {code:"bn",cont:"asia",ar:"بروناي",en:"Brunei",capAr:"بندر سري بكاوان",capEn:"Bandar Seri Begawan",curAr:"دولار بروناي",curEn:"Brunei Dollar",curCode:"BND",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"kh",cont:"asia",ar:"كمبوديا",en:"Cambodia",capAr:"بنوم بنه",capEn:"Phnom Penh",curAr:"رييل كمبودي",curEn:"Cambodian Riel",curCode:"KHR",curShortAr:"رييل",curShortEn:"Riel"},
+  {code:"cn",cont:"asia",ar:"الصين",en:"China",capAr:"بكين",capEn:"Beijing",curAr:"يوان صيني",curEn:"Chinese Yuan",curCode:"CNY",curShortAr:"يوان",curShortEn:"Yuan"},
+  {code:"cy",cont:"asia",ar:"قبرص",en:"Cyprus",capAr:"نيقوسيا",capEn:"Nicosia",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"ge",cont:"asia",ar:"جورجيا",en:"Georgia",capAr:"تبليسي",capEn:"Tbilisi",curAr:"لاري جورجي",curEn:"Georgian Lari",curCode:"GEL",curShortAr:"لاري",curShortEn:"Lari"},
+  {code:"in",cont:"asia",ar:"الهند",en:"India",capAr:"نيودلهي",capEn:"New Delhi",curAr:"روبية هندية",curEn:"Indian Rupee",curCode:"INR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"id",cont:"asia",ar:"إندونيسيا",en:"Indonesia",capAr:"جاكرتا",capEn:"Jakarta",curAr:"روبية إندونيسية",curEn:"Indonesian Rupiah",curCode:"IDR",curShortAr:"روبية",curShortEn:"Rupiah"},
+  {code:"ir",cont:"asia",ar:"إيران",en:"Iran",capAr:"طهران",capEn:"Tehran",curAr:"ريال إيراني",curEn:"Iranian Rial",curCode:"IRR",curShortAr:"ريال",curShortEn:"Riyal"},
+  {code:"iq",cont:"asia",ar:"العراق",en:"Iraq",capAr:"بغداد",capEn:"Baghdad",curAr:"دينار عراقي",curEn:"Iraqi Dinar",curCode:"IQD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"jp",cont:"asia",ar:"اليابان",en:"Japan",capAr:"طوكيو",capEn:"Tokyo",curAr:"ين ياباني",curEn:"Japanese Yen",curCode:"JPY",curShortAr:"ين",curShortEn:"Yen"},
+  {code:"jo",cont:"asia",ar:"الأردن",en:"Jordan",capAr:"عمّان",capEn:"Amman",curAr:"دينار أردني",curEn:"Jordanian Dinar",curCode:"JOD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"kz",cont:"asia",ar:"كازاخستان",en:"Kazakhstan",capAr:"أستانا",capEn:"Astana",curAr:"تنغي كازاخستاني",curEn:"Kazakhstani Tenge",curCode:"KZT",curShortAr:"تنغي",curShortEn:"Tenge"},
+  {code:"kw",cont:"asia",ar:"الكويت",en:"Kuwait",capAr:"مدينة الكويت",capEn:"Kuwait City",curAr:"دينار كويتي",curEn:"Kuwaiti Dinar",curCode:"KWD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"kg",cont:"asia",ar:"قيرغيزستان",en:"Kyrgyzstan",capAr:"بيشكيك",capEn:"Bishkek",curAr:"سوم قيرغيزستاني",curEn:"Kyrgyzstani Som",curCode:"KGS",curShortAr:"سوم",curShortEn:"Som"},
+  {code:"la",cont:"asia",ar:"لاوس",en:"Laos",capAr:"فيينتيان",capEn:"Vientiane",curAr:"كيب لاوسي",curEn:"Lao Kip",curCode:"LAK",curShortAr:"كيب",curShortEn:"Kip"},
+  {code:"lb",cont:"asia",ar:"لبنان",en:"Lebanon",capAr:"بيروت",capEn:"Beirut",curAr:"ليرة لبنانية",curEn:"Lebanese Pound",curCode:"LBP",curShortAr:"ليرة",curShortEn:"Pound"},
+  {code:"my",cont:"asia",ar:"ماليزيا",en:"Malaysia",capAr:"كوالالمبور",capEn:"Kuala Lumpur",curAr:"رينغيت ماليزي",curEn:"Malaysian Ringgit",curCode:"MYR",curShortAr:"رينغيت",curShortEn:"Ringgit"},
+  {code:"mv",cont:"asia",ar:"جزر المالديف",en:"Maldives",capAr:"ماليه",capEn:"Malé",curAr:"روفية مالديفية",curEn:"Maldivian Rufiyaa",curCode:"MVR",curShortAr:"روفية",curShortEn:"Rufiyaa"},
+  {code:"mn",cont:"asia",ar:"منغوليا",en:"Mongolia",capAr:"أولان باتور",capEn:"Ulaanbaatar",curAr:"توغروغ منغولي",curEn:"Mongolian Tögrög",curCode:"MNT",curShortAr:"توغروغ",curShortEn:"Tögrög"},
+  {code:"mm",cont:"asia",ar:"ميانمار",en:"Myanmar",capAr:"نايبيداو",capEn:"Naypyidaw",curAr:"كيات ميانماري",curEn:"Myanmar Kyat",curCode:"MMK",curShortAr:"كيات",curShortEn:"Kyat"},
+  {code:"np",cont:"asia",ar:"نيبال",en:"Nepal",capAr:"كاتماندو",capEn:"Kathmandu",curAr:"روبية نيبالية",curEn:"Nepalese Rupee",curCode:"NPR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"kp",cont:"asia",ar:"كوريا الشمالية",en:"North Korea",capAr:"بيونغ يانغ",capEn:"Pyongyang",curAr:"وون كوري شمالي",curEn:"North Korean Won",curCode:"KPW",curShortAr:"وون",curShortEn:"Won"},
+  {code:"om",cont:"asia",ar:"عُمان",en:"Oman",capAr:"مسقط",capEn:"Muscat",curAr:"ريال عماني",curEn:"Omani Rial",curCode:"OMR",curShortAr:"ريال",curShortEn:"Riyal"},
+  {code:"pk",cont:"asia",ar:"باكستان",en:"Pakistan",capAr:"إسلام آباد",capEn:"Islamabad",curAr:"روبية باكستانية",curEn:"Pakistani Rupee",curCode:"PKR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"ps",cont:"asia",ar:"فلسطين",en:"Palestine",capAr:"القدس",capEn:"Jerusalem",curAr:"شيكل إسرائيلي جديد",curEn:"Israeli New Shekel",curCode:"ILS",curShortAr:"شيكل",curShortEn:"Shekel"},
+  {code:"ph",cont:"asia",ar:"الفلبين",en:"Philippines",capAr:"مانيلا",capEn:"Manila",curAr:"بيزو فلبيني",curEn:"Philippine Peso",curCode:"PHP",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"qa",cont:"asia",ar:"قطر",en:"Qatar",capAr:"الدوحة",capEn:"Doha",curAr:"ريال قطري",curEn:"Qatari Riyal",curCode:"QAR",curShortAr:"ريال",curShortEn:"Riyal"},
+  {code:"sa",cont:"asia",ar:"السعودية",en:"Saudi Arabia",capAr:"الرياض",capEn:"Riyadh",curAr:"ريال سعودي",curEn:"Saudi Riyal",curCode:"SAR",curShortAr:"ريال",curShortEn:"Riyal"},
+  {code:"sg",cont:"asia",ar:"سنغافورة",en:"Singapore",capAr:"سنغافورة",capEn:"Singapore",curAr:"دولار سنغافوري",curEn:"Singapore Dollar",curCode:"SGD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"kr",cont:"asia",ar:"كوريا الجنوبية",en:"South Korea",capAr:"سيول",capEn:"Seoul",curAr:"وون كوري جنوبي",curEn:"South Korean Won",curCode:"KRW",curShortAr:"وون",curShortEn:"Won"},
+  {code:"lk",cont:"asia",ar:"سريلانكا",en:"Sri Lanka",capAr:"كولومبو",capEn:"Colombo",curAr:"روبية سريلانكية",curEn:"Sri Lankan Rupee",curCode:"LKR",curShortAr:"روبية",curShortEn:"Rupee"},
+  {code:"sy",cont:"asia",ar:"سوريا",en:"Syria",capAr:"دمشق",capEn:"Damascus",curAr:"ليرة سورية",curEn:"Syrian Pound",curCode:"SYP",curShortAr:"ليرة",curShortEn:"Pound"},
+  {code:"tw",cont:"asia",ar:"تايوان",en:"Taiwan",capAr:"تايبيه",capEn:"Taipei",curAr:"دولار تايواني جديد",curEn:"New Taiwan Dollar",curCode:"TWD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"tj",cont:"asia",ar:"طاجيكستان",en:"Tajikistan",capAr:"دوشنبه",capEn:"Dushanbe",curAr:"سوموني طاجيكستاني",curEn:"Tajikistani Somoni",curCode:"TJS",curShortAr:"سوموني",curShortEn:"Somoni"},
+  {code:"th",cont:"asia",ar:"تايلاند",en:"Thailand",capAr:"بانكوك",capEn:"Bangkok",curAr:"بات تايلاندي",curEn:"Thai Baht",curCode:"THB",curShortAr:"بات",curShortEn:"Baht"},
+  {code:"tl",cont:"asia",ar:"تيمور الشرقية",en:"Timor-Leste",capAr:"ديلي",capEn:"Dili",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"tr",cont:"asia",ar:"تركيا",en:"Turkey",capAr:"أنقرة",capEn:"Ankara",curAr:"ليرة تركية",curEn:"Turkish Lira",curCode:"TRY",curShortAr:"ليرة",curShortEn:"Lira"},
+  {code:"tm",cont:"asia",ar:"تركمانستان",en:"Turkmenistan",capAr:"عشق آباد",capEn:"Ashgabat",curAr:"منات تركمانستاني",curEn:"Turkmenistan Manat",curCode:"TMT",curShortAr:"منات",curShortEn:"Manat"},
+  {code:"ae",cont:"asia",ar:"الإمارات",en:"UAE",capAr:"أبوظبي",capEn:"Abu Dhabi",curAr:"درهم إماراتي",curEn:"UAE Dirham",curCode:"AED",curShortAr:"درهم",curShortEn:"Dirham"},
+  {code:"uz",cont:"asia",ar:"أوزبكستان",en:"Uzbekistan",capAr:"طشقند",capEn:"Tashkent",curAr:"سوم أوزبكستاني",curEn:"Uzbekistani Som",curCode:"UZS",curShortAr:"سوم",curShortEn:"Som"},
+  {code:"vn",cont:"asia",ar:"فيتنام",en:"Vietnam",capAr:"هانوي",capEn:"Hanoi",curAr:"دونغ فيتنامي",curEn:"Vietnamese Dong",curCode:"VND",curShortAr:"دونغ",curShortEn:"Dong"},
+  {code:"ye",cont:"asia",ar:"اليمن",en:"Yemen",capAr:"صنعاء",capEn:"Sana'a",curAr:"ريال يمني",curEn:"Yemeni Rial",curCode:"YER",curShortAr:"ريال",curShortEn:"Riyal"},
   // ===== أوروبا =====
-  {code:"al",cont:"europe",ar:"ألبانيا",en:"Albania",capAr:"تيرانا",capEn:"Tirana"},
-  {code:"ad",cont:"europe",ar:"أندورا",en:"Andorra",capAr:"أندورا لا فيلا",capEn:"Andorra la Vella"},
-  {code:"at",cont:"europe",ar:"النمسا",en:"Austria",capAr:"فيينا",capEn:"Vienna"},
-  {code:"by",cont:"europe",ar:"بيلاروسيا",en:"Belarus",capAr:"مينسك",capEn:"Minsk"},
-  {code:"be",cont:"europe",ar:"بلجيكا",en:"Belgium",capAr:"بروكسل",capEn:"Brussels"},
-  {code:"ba",cont:"europe",ar:"البوسنة والهرسك",en:"Bosnia and Herzegovina",capAr:"سراييفو",capEn:"Sarajevo"},
-  {code:"bg",cont:"europe",ar:"بلغاريا",en:"Bulgaria",capAr:"صوفيا",capEn:"Sofia"},
-  {code:"hr",cont:"europe",ar:"كرواتيا",en:"Croatia",capAr:"زغرب",capEn:"Zagreb"},
-  {code:"cz",cont:"europe",ar:"التشيك",en:"Czechia",capAr:"براغ",capEn:"Prague"},
-  {code:"dk",cont:"europe",ar:"الدنمارك",en:"Denmark",capAr:"كوبنهاغن",capEn:"Copenhagen"},
-  {code:"ee",cont:"europe",ar:"إستونيا",en:"Estonia",capAr:"تالين",capEn:"Tallinn"},
-  {code:"fi",cont:"europe",ar:"فنلندا",en:"Finland",capAr:"هلسنكي",capEn:"Helsinki"},
-  {code:"fr",cont:"europe",ar:"فرنسا",en:"France",capAr:"باريس",capEn:"Paris"},
-  {code:"de",cont:"europe",ar:"ألمانيا",en:"Germany",capAr:"برلين",capEn:"Berlin"},
-  {code:"gr",cont:"europe",ar:"اليونان",en:"Greece",capAr:"أثينا",capEn:"Athens"},
-  {code:"hu",cont:"europe",ar:"المجر",en:"Hungary",capAr:"بودابست",capEn:"Budapest"},
-  {code:"is",cont:"europe",ar:"آيسلندا",en:"Iceland",capAr:"ريكيافيك",capEn:"Reykjavik"},
-  {code:"ie",cont:"europe",ar:"أيرلندا",en:"Ireland",capAr:"دبلن",capEn:"Dublin"},
-  {code:"it",cont:"europe",ar:"إيطاليا",en:"Italy",capAr:"روما",capEn:"Rome"},
-  {code:"xk",cont:"europe",ar:"كوسوفو",en:"Kosovo",capAr:"بريشتينا",capEn:"Pristina"},
-  {code:"lv",cont:"europe",ar:"لاتفيا",en:"Latvia",capAr:"ريغا",capEn:"Riga"},
-  {code:"li",cont:"europe",ar:"ليختنشتاين",en:"Liechtenstein",capAr:"فادوز",capEn:"Vaduz"},
-  {code:"lt",cont:"europe",ar:"ليتوانيا",en:"Lithuania",capAr:"فيلنيوس",capEn:"Vilnius"},
-  {code:"lu",cont:"europe",ar:"لوكسمبورغ",en:"Luxembourg",capAr:"لوكسمبورغ",capEn:"Luxembourg"},
-  {code:"mt",cont:"europe",ar:"مالطا",en:"Malta",capAr:"فاليتا",capEn:"Valletta"},
-  {code:"md",cont:"europe",ar:"مولدوفا",en:"Moldova",capAr:"تشيسيناو",capEn:"Chișinău"},
-  {code:"mc",cont:"europe",ar:"موناكو",en:"Monaco",capAr:"موناكو",capEn:"Monaco"},
-  {code:"me",cont:"europe",ar:"الجبل الأسود",en:"Montenegro",capAr:"بودغوريتسا",capEn:"Podgorica"},
-  {code:"nl",cont:"europe",ar:"هولندا",en:"Netherlands",capAr:"أمستردام",capEn:"Amsterdam"},
-  {code:"mk",cont:"europe",ar:"مقدونيا الشمالية",en:"North Macedonia",capAr:"سكوبيه",capEn:"Skopje"},
-  {code:"no",cont:"europe",ar:"النرويج",en:"Norway",capAr:"أوسلو",capEn:"Oslo"},
-  {code:"pl",cont:"europe",ar:"بولندا",en:"Poland",capAr:"وارسو",capEn:"Warsaw"},
-  {code:"pt",cont:"europe",ar:"البرتغال",en:"Portugal",capAr:"لشبونة",capEn:"Lisbon"},
-  {code:"ro",cont:"europe",ar:"رومانيا",en:"Romania",capAr:"بوخارست",capEn:"Bucharest"},
-  {code:"ru",cont:"europe",ar:"روسيا",en:"Russia",capAr:"موسكو",capEn:"Moscow"},
-  {code:"sm",cont:"europe",ar:"سان مارينو",en:"San Marino",capAr:"سان مارينو",capEn:"San Marino"},
-  {code:"rs",cont:"europe",ar:"صربيا",en:"Serbia",capAr:"بلغراد",capEn:"Belgrade"},
-  {code:"sk",cont:"europe",ar:"سلوفاكيا",en:"Slovakia",capAr:"براتيسلافا",capEn:"Bratislava"},
-  {code:"si",cont:"europe",ar:"سلوفينيا",en:"Slovenia",capAr:"ليوبليانا",capEn:"Ljubljana"},
-  {code:"es",cont:"europe",ar:"إسبانيا",en:"Spain",capAr:"مدريد",capEn:"Madrid"},
-  {code:"se",cont:"europe",ar:"السويد",en:"Sweden",capAr:"ستوكهولم",capEn:"Stockholm"},
-  {code:"ch",cont:"europe",ar:"سويسرا",en:"Switzerland",capAr:"برن",capEn:"Bern"},
-  {code:"ua",cont:"europe",ar:"أوكرانيا",en:"Ukraine",capAr:"كييف",capEn:"Kyiv"},
-  {code:"gb",cont:"europe",ar:"بريطانيا",en:"United Kingdom",capAr:"لندن",capEn:"London"},
-  {code:"va",cont:"europe",ar:"الفاتيكان",en:"Vatican City",capAr:"الفاتيكان",capEn:"Vatican City"},
+  {code:"al",cont:"europe",ar:"ألبانيا",en:"Albania",capAr:"تيرانا",capEn:"Tirana",curAr:"ليك ألباني",curEn:"Albanian Lek",curCode:"ALL",curShortAr:"ليك",curShortEn:"Lek"},
+  {code:"ad",cont:"europe",ar:"أندورا",en:"Andorra",capAr:"أندورا لا فيلا",capEn:"Andorra la Vella",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"at",cont:"europe",ar:"النمسا",en:"Austria",capAr:"فيينا",capEn:"Vienna",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"by",cont:"europe",ar:"بيلاروسيا",en:"Belarus",capAr:"مينسك",capEn:"Minsk",curAr:"روبل بيلاروسي",curEn:"Belarusian Ruble",curCode:"BYN",curShortAr:"روبل",curShortEn:"Ruble"},
+  {code:"be",cont:"europe",ar:"بلجيكا",en:"Belgium",capAr:"بروكسل",capEn:"Brussels",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"ba",cont:"europe",ar:"البوسنة والهرسك",en:"Bosnia and Herzegovina",capAr:"سراييفو",capEn:"Sarajevo",curAr:"مارك بوسني قابل للتحويل",curEn:"Bosnia-Herzegovina Convertible Mark",curCode:"BAM",curShortAr:"مارك",curShortEn:"Mark"},
+  {code:"bg",cont:"europe",ar:"بلغاريا",en:"Bulgaria",capAr:"صوفيا",capEn:"Sofia",curAr:"ليف بلغاري",curEn:"Bulgarian Lev",curCode:"BGN",curShortAr:"ليف",curShortEn:"Lev"},
+  {code:"hr",cont:"europe",ar:"كرواتيا",en:"Croatia",capAr:"زغرب",capEn:"Zagreb",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"cz",cont:"europe",ar:"التشيك",en:"Czechia",capAr:"براغ",capEn:"Prague",curAr:"كورونا تشيكية",curEn:"Czech Koruna",curCode:"CZK",curShortAr:"كورونا",curShortEn:"Koruna"},
+  {code:"dk",cont:"europe",ar:"الدنمارك",en:"Denmark",capAr:"كوبنهاغن",capEn:"Copenhagen",curAr:"كرونة دنماركية",curEn:"Danish Krone",curCode:"DKK",curShortAr:"كرونة",curShortEn:"Krone"},
+  {code:"ee",cont:"europe",ar:"إستونيا",en:"Estonia",capAr:"تالين",capEn:"Tallinn",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"fi",cont:"europe",ar:"فنلندا",en:"Finland",capAr:"هلسنكي",capEn:"Helsinki",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"fr",cont:"europe",ar:"فرنسا",en:"France",capAr:"باريس",capEn:"Paris",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"de",cont:"europe",ar:"ألمانيا",en:"Germany",capAr:"برلين",capEn:"Berlin",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"gr",cont:"europe",ar:"اليونان",en:"Greece",capAr:"أثينا",capEn:"Athens",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"hu",cont:"europe",ar:"المجر",en:"Hungary",capAr:"بودابست",capEn:"Budapest",curAr:"فورنت مجري",curEn:"Hungarian Forint",curCode:"HUF",curShortAr:"فورنت",curShortEn:"Forint"},
+  {code:"is",cont:"europe",ar:"آيسلندا",en:"Iceland",capAr:"ريكيافيك",capEn:"Reykjavik",curAr:"كرونة آيسلندية",curEn:"Icelandic Króna",curCode:"ISK",curShortAr:"كرونة",curShortEn:"Króna"},
+  {code:"ie",cont:"europe",ar:"أيرلندا",en:"Ireland",capAr:"دبلن",capEn:"Dublin",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"it",cont:"europe",ar:"إيطاليا",en:"Italy",capAr:"روما",capEn:"Rome",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"xk",cont:"europe",ar:"كوسوفو",en:"Kosovo",capAr:"بريشتينا",capEn:"Pristina",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"lv",cont:"europe",ar:"لاتفيا",en:"Latvia",capAr:"ريغا",capEn:"Riga",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"li",cont:"europe",ar:"ليختنشتاين",en:"Liechtenstein",capAr:"فادوز",capEn:"Vaduz",curAr:"فرنك سويسري",curEn:"Swiss Franc",curCode:"CHF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"lt",cont:"europe",ar:"ليتوانيا",en:"Lithuania",capAr:"فيلنيوس",capEn:"Vilnius",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"lu",cont:"europe",ar:"لوكسمبورغ",en:"Luxembourg",capAr:"لوكسمبورغ",capEn:"Luxembourg",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"mt",cont:"europe",ar:"مالطا",en:"Malta",capAr:"فاليتا",capEn:"Valletta",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"md",cont:"europe",ar:"مولدوفا",en:"Moldova",capAr:"تشيسيناو",capEn:"Chișinău",curAr:"ليو مولدوفي",curEn:"Moldovan Leu",curCode:"MDL",curShortAr:"ليو",curShortEn:"Leu"},
+  {code:"mc",cont:"europe",ar:"موناكو",en:"Monaco",capAr:"موناكو",capEn:"Monaco",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"me",cont:"europe",ar:"الجبل الأسود",en:"Montenegro",capAr:"بودغوريتسا",capEn:"Podgorica",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"nl",cont:"europe",ar:"هولندا",en:"Netherlands",capAr:"أمستردام",capEn:"Amsterdam",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"mk",cont:"europe",ar:"مقدونيا الشمالية",en:"North Macedonia",capAr:"سكوبيه",capEn:"Skopje",curAr:"دينار مقدوني",curEn:"Macedonian Denar",curCode:"MKD",curShortAr:"دينار",curShortEn:"Denar"},
+  {code:"no",cont:"europe",ar:"النرويج",en:"Norway",capAr:"أوسلو",capEn:"Oslo",curAr:"كرونة نرويجية",curEn:"Norwegian Krone",curCode:"NOK",curShortAr:"كرونة",curShortEn:"Krone"},
+  {code:"pl",cont:"europe",ar:"بولندا",en:"Poland",capAr:"وارسو",capEn:"Warsaw",curAr:"زلوتي بولندي",curEn:"Polish Złoty",curCode:"PLN",curShortAr:"زلوتي",curShortEn:"Złoty"},
+  {code:"pt",cont:"europe",ar:"البرتغال",en:"Portugal",capAr:"لشبونة",capEn:"Lisbon",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"ro",cont:"europe",ar:"رومانيا",en:"Romania",capAr:"بوخارست",capEn:"Bucharest",curAr:"ليو روماني",curEn:"Romanian Leu",curCode:"RON",curShortAr:"ليو",curShortEn:"Leu"},
+  {code:"ru",cont:"europe",ar:"روسيا",en:"Russia",capAr:"موسكو",capEn:"Moscow",curAr:"روبل روسي",curEn:"Russian Ruble",curCode:"RUB",curShortAr:"روبل",curShortEn:"Ruble"},
+  {code:"sm",cont:"europe",ar:"سان مارينو",en:"San Marino",capAr:"سان مارينو",capEn:"San Marino",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"rs",cont:"europe",ar:"صربيا",en:"Serbia",capAr:"بلغراد",capEn:"Belgrade",curAr:"دينار صربي",curEn:"Serbian Dinar",curCode:"RSD",curShortAr:"دينار",curShortEn:"Dinar"},
+  {code:"sk",cont:"europe",ar:"سلوفاكيا",en:"Slovakia",capAr:"براتيسلافا",capEn:"Bratislava",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"si",cont:"europe",ar:"سلوفينيا",en:"Slovenia",capAr:"ليوبليانا",capEn:"Ljubljana",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"es",cont:"europe",ar:"إسبانيا",en:"Spain",capAr:"مدريد",capEn:"Madrid",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
+  {code:"se",cont:"europe",ar:"السويد",en:"Sweden",capAr:"ستوكهولم",capEn:"Stockholm",curAr:"كرونة سويدية",curEn:"Swedish Krona",curCode:"SEK",curShortAr:"كرونة",curShortEn:"Krona"},
+  {code:"ch",cont:"europe",ar:"سويسرا",en:"Switzerland",capAr:"برن",capEn:"Bern",curAr:"فرنك سويسري",curEn:"Swiss Franc",curCode:"CHF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"ua",cont:"europe",ar:"أوكرانيا",en:"Ukraine",capAr:"كييف",capEn:"Kyiv",curAr:"هريفنيا أوكرانية",curEn:"Ukrainian Hryvnia",curCode:"UAH",curShortAr:"هريفنيا",curShortEn:"Hryvnia"},
+  {code:"gb",cont:"europe",ar:"بريطانيا",en:"United Kingdom",capAr:"لندن",capEn:"London",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"va",cont:"europe",ar:"الفاتيكان",en:"Vatican City",capAr:"الفاتيكان",capEn:"Vatican City",curAr:"يورو",curEn:"Euro",curCode:"EUR",curShortAr:"يورو",curShortEn:"Euro"},
   // ===== أمريكا الشمالية والكاريبي =====
-  {code:"ag",cont:"namerica",ar:"أنتيغوا وباربودا",en:"Antigua and Barbuda",capAr:"سانت جونز",capEn:"St. John's"},
-  {code:"bs",cont:"namerica",ar:"جزر البهاما",en:"Bahamas",capAr:"ناساو",capEn:"Nassau"},
-  {code:"bb",cont:"namerica",ar:"بربادوس",en:"Barbados",capAr:"بريدجتاون",capEn:"Bridgetown"},
-  {code:"bz",cont:"namerica",ar:"بليز",en:"Belize",capAr:"بلموبان",capEn:"Belmopan"},
-  {code:"ca",cont:"namerica",ar:"كندا",en:"Canada",capAr:"أوتاوا",capEn:"Ottawa"},
-  {code:"cr",cont:"namerica",ar:"كوستاريكا",en:"Costa Rica",capAr:"سان خوسيه",capEn:"San José"},
-  {code:"cu",cont:"namerica",ar:"كوبا",en:"Cuba",capAr:"هافانا",capEn:"Havana"},
-  {code:"dm",cont:"namerica",ar:"دومينيكا",en:"Dominica",capAr:"روزو",capEn:"Roseau"},
-  {code:"do",cont:"namerica",ar:"جمهورية الدومينيكان",en:"Dominican Republic",capAr:"سانتو دومينغو",capEn:"Santo Domingo"},
-  {code:"sv",cont:"namerica",ar:"السلفادور",en:"El Salvador",capAr:"سان سلفادور",capEn:"San Salvador"},
-  {code:"gd",cont:"namerica",ar:"غرينادا",en:"Grenada",capAr:"سانت جورج",capEn:"St. George's"},
-  {code:"gt",cont:"namerica",ar:"غواتيمالا",en:"Guatemala",capAr:"مدينة غواتيمالا",capEn:"Guatemala City"},
-  {code:"ht",cont:"namerica",ar:"هايتي",en:"Haiti",capAr:"بورت أو برنس",capEn:"Port-au-Prince"},
-  {code:"hn",cont:"namerica",ar:"هندوراس",en:"Honduras",capAr:"تيغوسيغالبا",capEn:"Tegucigalpa"},
-  {code:"jm",cont:"namerica",ar:"جامايكا",en:"Jamaica",capAr:"كينغستون",capEn:"Kingston"},
-  {code:"mx",cont:"namerica",ar:"المكسيك",en:"Mexico",capAr:"مكسيكو سيتي",capEn:"Mexico City"},
-  {code:"ni",cont:"namerica",ar:"نيكاراغوا",en:"Nicaragua",capAr:"ماناغوا",capEn:"Managua"},
-  {code:"pa",cont:"namerica",ar:"بنما",en:"Panama",capAr:"مدينة بنما",capEn:"Panama City"},
-  {code:"kn",cont:"namerica",ar:"سانت كيتس ونيفيس",en:"St. Kitts and Nevis",capAr:"باسطير",capEn:"Basseterre"},
-  {code:"lc",cont:"namerica",ar:"سانت لوسيا",en:"St. Lucia",capAr:"كاستري",capEn:"Castries"},
-  {code:"vc",cont:"namerica",ar:"سانت فينسنت والغرينادين",en:"St. Vincent and the Grenadines",capAr:"كينغستاون",capEn:"Kingstown"},
-  {code:"tt",cont:"namerica",ar:"ترينيداد وتوباغو",en:"Trinidad and Tobago",capAr:"بورت أوف سبين",capEn:"Port of Spain"},
-  {code:"us",cont:"namerica",ar:"أمريكا",en:"United States",capAr:"واشنطن",capEn:"Washington D.C."},
+  {code:"ag",cont:"namerica",ar:"أنتيغوا وباربودا",en:"Antigua and Barbuda",capAr:"سانت جونز",capEn:"St. John's",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"bs",cont:"namerica",ar:"جزر البهاما",en:"Bahamas",capAr:"ناساو",capEn:"Nassau",curAr:"دولار بهامي",curEn:"Bahamian Dollar",curCode:"BSD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"bb",cont:"namerica",ar:"بربادوس",en:"Barbados",capAr:"بريدجتاون",capEn:"Bridgetown",curAr:"دولار بربادوسي",curEn:"Barbadian Dollar",curCode:"BBD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"bz",cont:"namerica",ar:"بليز",en:"Belize",capAr:"بلموبان",capEn:"Belmopan",curAr:"دولار بليزي",curEn:"Belize Dollar",curCode:"BZD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"ca",cont:"namerica",ar:"كندا",en:"Canada",capAr:"أوتاوا",capEn:"Ottawa",curAr:"دولار كندي",curEn:"Canadian Dollar",curCode:"CAD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"cr",cont:"namerica",ar:"كوستاريكا",en:"Costa Rica",capAr:"سان خوسيه",capEn:"San José",curAr:"كولون كوستاريكي",curEn:"Costa Rican Colón",curCode:"CRC",curShortAr:"كولون",curShortEn:"Colón"},
+  {code:"cu",cont:"namerica",ar:"كوبا",en:"Cuba",capAr:"هافانا",capEn:"Havana",curAr:"بيزو كوبي",curEn:"Cuban Peso",curCode:"CUP",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"dm",cont:"namerica",ar:"دومينيكا",en:"Dominica",capAr:"روزو",capEn:"Roseau",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"do",cont:"namerica",ar:"جمهورية الدومينيكان",en:"Dominican Republic",capAr:"سانتو دومينغو",capEn:"Santo Domingo",curAr:"بيزو دومينيكاني",curEn:"Dominican Peso",curCode:"DOP",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"sv",cont:"namerica",ar:"السلفادور",en:"El Salvador",capAr:"سان سلفادور",capEn:"San Salvador",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"gd",cont:"namerica",ar:"غرينادا",en:"Grenada",capAr:"سانت جورج",capEn:"St. George's",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"gt",cont:"namerica",ar:"غواتيمالا",en:"Guatemala",capAr:"مدينة غواتيمالا",capEn:"Guatemala City",curAr:"كتسال غواتيمالي",curEn:"Guatemalan Quetzal",curCode:"GTQ",curShortAr:"كتسال",curShortEn:"Quetzal"},
+  {code:"ht",cont:"namerica",ar:"هايتي",en:"Haiti",capAr:"بورت أو برنس",capEn:"Port-au-Prince",curAr:"غورد هايتي",curEn:"Haitian Gourde",curCode:"HTG",curShortAr:"غورد",curShortEn:"Gourde"},
+  {code:"hn",cont:"namerica",ar:"هندوراس",en:"Honduras",capAr:"تيغوسيغالبا",capEn:"Tegucigalpa",curAr:"ليمبيرا هندوراسية",curEn:"Honduran Lempira",curCode:"HNL",curShortAr:"ليمبيرا",curShortEn:"Lempira"},
+  {code:"jm",cont:"namerica",ar:"جامايكا",en:"Jamaica",capAr:"كينغستون",capEn:"Kingston",curAr:"دولار جامايكي",curEn:"Jamaican Dollar",curCode:"JMD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"mx",cont:"namerica",ar:"المكسيك",en:"Mexico",capAr:"مكسيكو سيتي",capEn:"Mexico City",curAr:"بيزو مكسيكي",curEn:"Mexican Peso",curCode:"MXN",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"ni",cont:"namerica",ar:"نيكاراغوا",en:"Nicaragua",capAr:"ماناغوا",capEn:"Managua",curAr:"كوردوبا نيكاراغوية",curEn:"Nicaraguan Córdoba",curCode:"NIO",curShortAr:"كوردوبا",curShortEn:"Córdoba"},
+  {code:"pa",cont:"namerica",ar:"بنما",en:"Panama",capAr:"مدينة بنما",capEn:"Panama City",curAr:"بالبوا بنمي",curEn:"Panamanian Balboa",curCode:"PAB",curShortAr:"بالبوا",curShortEn:"Balboa"},
+  {code:"kn",cont:"namerica",ar:"سانت كيتس ونيفيس",en:"St. Kitts and Nevis",capAr:"باسطير",capEn:"Basseterre",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"lc",cont:"namerica",ar:"سانت لوسيا",en:"St. Lucia",capAr:"كاستري",capEn:"Castries",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"vc",cont:"namerica",ar:"سانت فينسنت والغرينادين",en:"St. Vincent and the Grenadines",capAr:"كينغستاون",capEn:"Kingstown",curAr:"دولار شرق الكاريبي",curEn:"East Caribbean Dollar",curCode:"XCD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"tt",cont:"namerica",ar:"ترينيداد وتوباغو",en:"Trinidad and Tobago",capAr:"بورت أوف سبين",capEn:"Port of Spain",curAr:"دولار ترينيدادي وتوباغو",curEn:"Trinidad and Tobago Dollar",curCode:"TTD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"us",cont:"namerica",ar:"أمريكا",en:"United States",capAr:"واشنطن",capEn:"Washington D.C.",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
   // ===== أمريكا الجنوبية =====
-  {code:"ar",cont:"samerica",ar:"الأرجنتين",en:"Argentina",capAr:"بوينس آيرس",capEn:"Buenos Aires"},
-  {code:"bo",cont:"samerica",ar:"بوليفيا",en:"Bolivia",capAr:"لاباز",capEn:"La Paz"},
-  {code:"br",cont:"samerica",ar:"البرازيل",en:"Brazil",capAr:"برازيليا",capEn:"Brasília"},
-  {code:"cl",cont:"samerica",ar:"تشيلي",en:"Chile",capAr:"سانتياغو",capEn:"Santiago"},
-  {code:"co",cont:"samerica",ar:"كولومبيا",en:"Colombia",capAr:"بوغوتا",capEn:"Bogotá"},
-  {code:"ec",cont:"samerica",ar:"الإكوادور",en:"Ecuador",capAr:"كيتو",capEn:"Quito"},
-  {code:"gy",cont:"samerica",ar:"غيانا",en:"Guyana",capAr:"جورجتاون",capEn:"Georgetown"},
-  {code:"py",cont:"samerica",ar:"باراغواي",en:"Paraguay",capAr:"أسونسيون",capEn:"Asunción"},
-  {code:"pe",cont:"samerica",ar:"بيرو",en:"Peru",capAr:"ليما",capEn:"Lima"},
-  {code:"sr",cont:"samerica",ar:"سورينام",en:"Suriname",capAr:"باراماريبو",capEn:"Paramaribo"},
-  {code:"uy",cont:"samerica",ar:"أوروغواي",en:"Uruguay",capAr:"مونتيفيديو",capEn:"Montevideo"},
-  {code:"ve",cont:"samerica",ar:"فنزويلا",en:"Venezuela",capAr:"كاراكاس",capEn:"Caracas"},
+  {code:"ar",cont:"samerica",ar:"الأرجنتين",en:"Argentina",capAr:"بوينس آيرس",capEn:"Buenos Aires",curAr:"بيزو أرجنتيني",curEn:"Argentine Peso",curCode:"ARS",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"bo",cont:"samerica",ar:"بوليفيا",en:"Bolivia",capAr:"سوكريه",capEn:"Sucre",altCapAr:["لا باز","لاباز"],altCapEn:["La Paz"],curAr:"بوليفيانو بوليفي",curEn:"Bolivian Boliviano",curCode:"BOB",curShortAr:"بوليفيانو",curShortEn:"Boliviano"},
+  {code:"br",cont:"samerica",ar:"البرازيل",en:"Brazil",capAr:"برازيليا",capEn:"Brasília",curAr:"ريال برازيلي",curEn:"Brazilian Real",curCode:"BRL",curShortAr:"ريال",curShortEn:"Real"},
+  {code:"cl",cont:"samerica",ar:"تشيلي",en:"Chile",capAr:"سانتياغو",capEn:"Santiago",curAr:"بيزو تشيلي",curEn:"Chilean Peso",curCode:"CLP",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"co",cont:"samerica",ar:"كولومبيا",en:"Colombia",capAr:"بوغوتا",capEn:"Bogotá",curAr:"بيزو كولومبي",curEn:"Colombian Peso",curCode:"COP",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"ec",cont:"samerica",ar:"الإكوادور",en:"Ecuador",capAr:"كيتو",capEn:"Quito",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"gy",cont:"samerica",ar:"غيانا",en:"Guyana",capAr:"جورجتاون",capEn:"Georgetown",curAr:"دولار غياني",curEn:"Guyanese Dollar",curCode:"GYD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"py",cont:"samerica",ar:"باراغواي",en:"Paraguay",capAr:"أسونسيون",capEn:"Asunción",curAr:"غواراني باراغواي",curEn:"Paraguayan Guaraní",curCode:"PYG",curShortAr:"غواراني",curShortEn:"Guaraní"},
+  {code:"pe",cont:"samerica",ar:"بيرو",en:"Peru",capAr:"ليما",capEn:"Lima",curAr:"سول بيروفي",curEn:"Peruvian Sol",curCode:"PEN",curShortAr:"سول",curShortEn:"Sol"},
+  {code:"sr",cont:"samerica",ar:"سورينام",en:"Suriname",capAr:"باراماريبو",capEn:"Paramaribo",curAr:"دولار سورينامي",curEn:"Surinamese Dollar",curCode:"SRD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"uy",cont:"samerica",ar:"أوروغواي",en:"Uruguay",capAr:"مونتيفيديو",capEn:"Montevideo",curAr:"بيزو أوروغواياني",curEn:"Uruguayan Peso",curCode:"UYU",curShortAr:"بيزو",curShortEn:"Peso"},
+  {code:"ve",cont:"samerica",ar:"فنزويلا",en:"Venezuela",capAr:"كاراكاس",capEn:"Caracas",curAr:"بوليفار فنزويلي",curEn:"Venezuelan Bolívar",curCode:"VES",curShortAr:"بوليفار",curShortEn:"Bolívar"},
   // ===== أوقيانوسيا =====
-  {code:"au",cont:"oceania",ar:"أستراليا",en:"Australia",capAr:"كانبيرا",capEn:"Canberra"},
-  {code:"fj",cont:"oceania",ar:"فيجي",en:"Fiji",capAr:"سوفا",capEn:"Suva"},
-  {code:"ki",cont:"oceania",ar:"كيريباتي",en:"Kiribati",capAr:"تاراوا",capEn:"Tarawa"},
-  {code:"mh",cont:"oceania",ar:"جزر مارشال",en:"Marshall Islands",capAr:"ماجورو",capEn:"Majuro"},
-  {code:"fm",cont:"oceania",ar:"ميكرونيسيا",en:"Micronesia",capAr:"باليكير",capEn:"Palikir"},
-  {code:"nr",cont:"oceania",ar:"ناورو",en:"Nauru",capAr:"يارين",capEn:"Yaren"},
-  {code:"nz",cont:"oceania",ar:"نيوزيلندا",en:"New Zealand",capAr:"ويلينغتون",capEn:"Wellington"},
-  {code:"pw",cont:"oceania",ar:"بالاو",en:"Palau",capAr:"نغيرولمود",capEn:"Ngerulmud"},
-  {code:"pg",cont:"oceania",ar:"بابوا غينيا الجديدة",en:"Papua New Guinea",capAr:"بورت مورسبي",capEn:"Port Moresby"},
-  {code:"ws",cont:"oceania",ar:"ساموا",en:"Samoa",capAr:"آبيا",capEn:"Apia"},
-  {code:"sb",cont:"oceania",ar:"جزر سليمان",en:"Solomon Islands",capAr:"هونيارا",capEn:"Honiara"},
-  {code:"to",cont:"oceania",ar:"تونغا",en:"Tonga",capAr:"نوكوعالوفا",capEn:"Nuku'alofa"},
-  {code:"tv",cont:"oceania",ar:"توفالو",en:"Tuvalu",capAr:"فونافوتي",capEn:"Funafuti"},
-  {code:"vu",cont:"oceania",ar:"فانواتو",en:"Vanuatu",capAr:"بورت فيلا",capEn:"Port Vila"},
+  {code:"au",cont:"oceania",ar:"أستراليا",en:"Australia",capAr:"كانبيرا",capEn:"Canberra",curAr:"دولار أسترالي",curEn:"Australian Dollar",curCode:"AUD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"fj",cont:"oceania",ar:"فيجي",en:"Fiji",capAr:"سوفا",capEn:"Suva",curAr:"دولار فيجي",curEn:"Fijian Dollar",curCode:"FJD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"ki",cont:"oceania",ar:"كيريباتي",en:"Kiribati",capAr:"تاراوا",capEn:"Tarawa",curAr:"دولار أسترالي",curEn:"Australian Dollar",curCode:"AUD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"mh",cont:"oceania",ar:"جزر مارشال",en:"Marshall Islands",capAr:"ماجورو",capEn:"Majuro",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"fm",cont:"oceania",ar:"ميكرونيسيا",en:"Micronesia",capAr:"باليكير",capEn:"Palikir",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"nr",cont:"oceania",ar:"ناورو",en:"Nauru",capAr:"يارين",capEn:"Yaren",curAr:"دولار أسترالي",curEn:"Australian Dollar",curCode:"AUD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"nz",cont:"oceania",ar:"نيوزيلندا",en:"New Zealand",capAr:"ويلينغتون",capEn:"Wellington",curAr:"دولار نيوزيلندي",curEn:"New Zealand Dollar",curCode:"NZD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"pw",cont:"oceania",ar:"بالاو",en:"Palau",capAr:"نغيرولمود",capEn:"Ngerulmud",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"pg",cont:"oceania",ar:"بابوا غينيا الجديدة",en:"Papua New Guinea",capAr:"بورت مورسبي",capEn:"Port Moresby",curAr:"كينا بابوا غينيا الجديدة",curEn:"Papua New Guinean Kina",curCode:"PGK",curShortAr:"كينا",curShortEn:"Kina"},
+  {code:"ws",cont:"oceania",ar:"ساموا",en:"Samoa",capAr:"آبيا",capEn:"Apia",curAr:"تالا ساموي",curEn:"Samoan Tālā",curCode:"WST",curShortAr:"تالا",curShortEn:"Tālā"},
+  {code:"sb",cont:"oceania",ar:"جزر سليمان",en:"Solomon Islands",capAr:"هونيارا",capEn:"Honiara",curAr:"دولار جزر سليمان",curEn:"Solomon Islands Dollar",curCode:"SBD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"to",cont:"oceania",ar:"تونغا",en:"Tonga",capAr:"نوكوعالوفا",capEn:"Nuku'alofa",curAr:"بأنغا تونغي",curEn:"Tongan Paʻanga",curCode:"TOP",curShortAr:"بأنغا",curShortEn:"Paʻanga"},
+  {code:"tv",cont:"oceania",ar:"توفالو",en:"Tuvalu",capAr:"فونافوتي",capEn:"Funafuti",curAr:"دولار أسترالي",curEn:"Australian Dollar",curCode:"AUD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"vu",cont:"oceania",ar:"فانواتو",en:"Vanuatu",capAr:"بورت فيلا",capEn:"Port Vila",curAr:"فاتو فانواتو",curEn:"Vanuatu Vatu",curCode:"VUV",curShortAr:"فاتو",curShortEn:"Vatu"},
   // ===== كيانات/أقاليم غير أعضاء بالأمم المتحدة (مدموجة مع القارات) =====
-  {code:"hk",cont:"asia",ar:"هونج كونج",en:"Hong Kong",capAr:"هونج كونج",capEn:"Hong Kong"},
-  {code:"mo",cont:"asia",ar:"ماكاو",en:"Macau",capAr:"ماكاو",capEn:"Macau"},
-  {code:"eh",cont:"africa",ar:"الصحراء الغربية",en:"Western Sahara",capAr:"العيون",capEn:"Laayoune"},
-  {code:"sct",cont:"europe",ar:"اسكتلندا",en:"Scotland",capAr:"إدنبرة",capEn:"Edinburgh"},
-  {code:"eng",cont:"europe",ar:"إنجلترا",en:"England",capAr:"لندن",capEn:"London"},
-  {code:"nic",cont:"asia",ar:"شمال قبرص",en:"Northern Cyprus",capAr:"لفكوشا",capEn:"Lefkoşa"},
+  {code:"hk",cont:"asia",ar:"هونج كونج",en:"Hong Kong",capAr:"هونج كونج",capEn:"Hong Kong",curAr:"دولار هونغ كونغ",curEn:"Hong Kong Dollar",curCode:"HKD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"mo",cont:"asia",ar:"ماكاو",en:"Macau",capAr:"ماكاو",capEn:"Macau",curAr:"باتاكا ماكاوية",curEn:"Macanese Pataca",curCode:"MOP",curShortAr:"باتاكا",curShortEn:"Pataca"},
+  {code:"eh",cont:"africa",ar:"الصحراء الغربية",en:"Western Sahara",capAr:"العيون",capEn:"Laayoune",curAr:"درهم مغربي",curEn:"Moroccan Dirham",curCode:"MAD",curShortAr:"درهم",curShortEn:"Dirham"},
+  {code:"sct",cont:"europe",ar:"اسكتلندا",en:"Scotland",capAr:"إدنبرة",capEn:"Edinburgh",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"eng",cont:"europe",ar:"إنجلترا",en:"England",capAr:"لندن",capEn:"London",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"nic",cont:"asia",ar:"شمال قبرص",en:"Northern Cyprus",capAr:"لفكوشا",capEn:"Lefkoşa",curAr:"ليرة تركية",curEn:"Turkish Lira",curCode:"TRY",curShortAr:"ليرة",curShortEn:"Lira"},
   // ===== أقاليم/كيانات إضافية جديدة =====
-  {code:"gl",cont:"namerica",ar:"جرينلاند",en:"Greenland",capAr:"نوك",capEn:"Nuuk"},
-  {code:"fo",cont:"europe",ar:"جزر فارو",en:"Faroe Islands",capAr:"تورشافن",capEn:"Tórshavn"},
-  {code:"im",cont:"europe",ar:"جزيرة مان",en:"Isle of Man",capAr:"دوجلاس",capEn:"Douglas"},
-  {code:"je",cont:"europe",ar:"جيرزي",en:"Jersey",capAr:"سانت هيلير",capEn:"Saint Helier"},
-  {code:"gg",cont:"europe",ar:"جيرنزي",en:"Guernsey",capAr:"سانت بيتر بورت",capEn:"Saint Peter Port"},
-  {code:"gi",cont:"europe",ar:"جبل طارق",en:"Gibraltar",capAr:"جبل طارق",capEn:"Gibraltar"},
-  {code:"bm",cont:"namerica",ar:"برمودا",en:"Bermuda",capAr:"هاميلتون",capEn:"Hamilton"},
-  {code:"pr",cont:"namerica",ar:"بورتوريكو",en:"Puerto Rico",capAr:"سان خوان",capEn:"San Juan"},
-  {code:"aw",cont:"namerica",ar:"أروبا",en:"Aruba",capAr:"أورانيستاد",capEn:"Oranjestad"},
-  {code:"cw",cont:"namerica",ar:"كوراساو",en:"Curaçao",capAr:"ويليمستاد",capEn:"Willemstad"},
-  {code:"sx",cont:"namerica",ar:"سينت مارتن",en:"Sint Maarten",capAr:"فيليبسبورخ",capEn:"Philipsburg"},
-  {code:"ck",cont:"oceania",ar:"جزر كوك",en:"Cook Islands",capAr:"أفاروا",capEn:"Avarua"},
-  {code:"nu",cont:"oceania",ar:"نييوي",en:"Niue",capAr:"ألوفي",capEn:"Alofi"},
-  {code:"as",cont:"oceania",ar:"ساموا الأمريكية",en:"American Samoa",capAr:"باغو باغو",capEn:"Pago Pago"},
-  {code:"gu",cont:"oceania",ar:"جوام",en:"Guam",capAr:"هاغاتنا",capEn:"Hagåtña"},
-  {code:"pf",cont:"oceania",ar:"بولينيزيا الفرنسية",en:"French Polynesia",capAr:"بابيتي",capEn:"Papeete"},
-  {code:"nc",cont:"oceania",ar:"كاليدونيا الجديدة",en:"New Caledonia",capAr:"نوميا",capEn:"Nouméa"},
+  {code:"gl",cont:"namerica",ar:"جرينلاند",en:"Greenland",capAr:"نوك",capEn:"Nuuk",curAr:"كرونة دنماركية",curEn:"Danish Krone",curCode:"DKK",curShortAr:"كرونة",curShortEn:"Krone"},
+  {code:"fo",cont:"europe",ar:"جزر فارو",en:"Faroe Islands",capAr:"تورشافن",capEn:"Tórshavn",curAr:"كرونة دنماركية",curEn:"Danish Krone",curCode:"DKK",curShortAr:"كرونة",curShortEn:"Krone"},
+  {code:"im",cont:"europe",ar:"جزيرة مان",en:"Isle of Man",capAr:"دوجلاس",capEn:"Douglas",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"je",cont:"europe",ar:"جيرزي",en:"Jersey",capAr:"سانت هيلير",capEn:"Saint Helier",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"gg",cont:"europe",ar:"جيرنزي",en:"Guernsey",capAr:"سانت بيتر بورت",capEn:"Saint Peter Port",curAr:"جنيه إسترليني",curEn:"Pound Sterling",curCode:"GBP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"gi",cont:"europe",ar:"جبل طارق",en:"Gibraltar",capAr:"جبل طارق",capEn:"Gibraltar",curAr:"جنيه جبل طارق",curEn:"Gibraltar Pound",curCode:"GIP",curShortAr:"جنيه",curShortEn:"Pound"},
+  {code:"bm",cont:"namerica",ar:"برمودا",en:"Bermuda",capAr:"هاميلتون",capEn:"Hamilton",curAr:"دولار برمودي",curEn:"Bermudian Dollar",curCode:"BMD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"pr",cont:"namerica",ar:"بورتوريكو",en:"Puerto Rico",capAr:"سان خوان",capEn:"San Juan",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"aw",cont:"namerica",ar:"أروبا",en:"Aruba",capAr:"أورانيستاد",capEn:"Oranjestad",curAr:"فلورين أروبي",curEn:"Aruban Florin",curCode:"AWG",curShortAr:"فلورين",curShortEn:"Florin"},
+  {code:"cw",cont:"namerica",ar:"كوراساو",en:"Curaçao",capAr:"ويليمستاد",capEn:"Willemstad",curAr:"غيلدر كاريبي",curEn:"Caribbean Guilder",curCode:"XCG",curShortAr:"غيلدر",curShortEn:"Guilder"},
+  {code:"sx",cont:"namerica",ar:"سينت مارتن",en:"Sint Maarten",capAr:"فيليبسبورخ",capEn:"Philipsburg",curAr:"غيلدر كاريبي",curEn:"Caribbean Guilder",curCode:"XCG",curShortAr:"غيلدر",curShortEn:"Guilder"},
+  {code:"ck",cont:"oceania",ar:"جزر كوك",en:"Cook Islands",capAr:"أفاروا",capEn:"Avarua",curAr:"دولار نيوزيلندي",curEn:"New Zealand Dollar",curCode:"NZD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"nu",cont:"oceania",ar:"نييوي",en:"Niue",capAr:"ألوفي",capEn:"Alofi",curAr:"دولار نيوزيلندي",curEn:"New Zealand Dollar",curCode:"NZD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"as",cont:"oceania",ar:"ساموا الأمريكية",en:"American Samoa",capAr:"باغو باغو",capEn:"Pago Pago",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"gu",cont:"oceania",ar:"جوام",en:"Guam",capAr:"هاغاتنا",capEn:"Hagåtña",curAr:"دولار أمريكي",curEn:"US Dollar",curCode:"USD",curShortAr:"دولار",curShortEn:"Dollar"},
+  {code:"pf",cont:"oceania",ar:"بولينيزيا الفرنسية",en:"French Polynesia",capAr:"بابيتي",capEn:"Papeete",curAr:"فرنك المحيط الهادئ الفرنسي (سيفب)",curEn:"CFP Franc",curCode:"XPF",curShortAr:"فرنك",curShortEn:"Franc"},
+  {code:"nc",cont:"oceania",ar:"كاليدونيا الجديدة",en:"New Caledonia",capAr:"نوميا",capEn:"Nouméa",curAr:"فرنك المحيط الهادئ الفرنسي (سيفب)",curEn:"CFP Franc",curCode:"XPF",curShortAr:"فرنك",curShortEn:"Franc"},
 ];
 
 /* ---------------------------------------------------------------------
@@ -927,16 +953,18 @@ const CONFUSABLE_GROUPS = [
   ["sn","ml","gn","cm"],            // vertical green-yellow-red pan-African family (Senegal, Mali, Guinea, Cameroon)
   ["au","nz"],                      // Union Jack canton + stars on blue
   ["si","sk","ru","rs"],            // horizontal white-blue-red family (Slovenia, Slovakia, Russia, Serbia)
-  ["dk","no","is","se","fi"],       // Nordic cross flags
+  ["dk","no","is","se","fi","fo"],  // Nordic cross flags (incl. Faroe Islands)
   ["ne","in"],                      // horizontal orange-white-green with a centered circle/emblem (Niger, India)
   ["ar","uy"],                      // light-blue/white stripes with a sun emblem (Argentina, Uruguay)
   ["hu","bg","it","mx"],            // red/white/green tricolor family, regardless of stripe direction
-  ["at","lv"],                      // horizontal red-white-red (Austria, Latvia)
+  ["at","lv","pf"],                 // horizontal red-white-red (Austria, Latvia, French Polynesia)
   ["lt","bo"],                      // horizontal yellow-green-red vs red-yellow-green (Lithuania, Bolivia)
   ["dz","pk"],                      // green field, white crescent and star
   ["th","cr"],                      // horizontal bands with a thick middle stripe (Thailand, Costa Rica)
   ["lr","us","my"],                 // stripes + star(s) on a canton (Liberia, United States, Malaysia)
   ["qa","bh"],                      // near-identical serrated white band on a solid field — maroon (Qatar) vs red (Bahrain)
+  ["kw","iq"],                      // red-white-black horizontal (Kuwait has a green trapezoid, Iraq has Arabic script)
+  ["pr","cu"],                      // Puerto Rico & Cuba (mirrored colors, triangle + star)
   ["vn","cn"],                      // red field with yellow star(s) — one big star (Vietnam) vs five (China)
 ];
 
@@ -964,9 +992,23 @@ function getWrongOptions(correct, fallbackPool, count) {
   let candidates = [];
   const usedCodes = () => new Set([correct.code, ...candidates.map(c => c.code)]);
 
+  // Tier 0 — one visually-confusable flag goes in FIRST, so the hardest
+  // look-alike (Qatar/Bahrain...) is never crowded out by random bloc or
+  // continent mates. It must belong to the current region (bloc OR
+  // continent); with no region selected (whole world) any look-alike works.
+  if (count > 0 && confusableMap[correct.code]) {
+    const regionCodes = currentContinentKey ? new Set(regionCountries(currentContinentKey).map(c => c.code)) : null;
+    const eligible = shuffle([...confusableMap[correct.code]]
+      .filter(code => !regionCodes || regionCodes.has(code))
+      .map(code => countries.find(c => c.code === code))
+      .filter(Boolean));
+    if (eligible.length) candidates.push(eligible[0]);
+  }
+
   if (isBlocKey(currentContinentKey) && currentContinentKey !== 'bloc_republic') {
-    const blocMates = shuffle(regionCountries(currentContinentKey).filter(c => c.code !== correct.code));
-    candidates = candidates.concat(blocMates.slice(0, count));
+    const used0 = usedCodes();
+    const blocMates = shuffle(regionCountries(currentContinentKey).filter(c => !used0.has(c.code)));
+    candidates = candidates.concat(blocMates.slice(0, Math.max(0, count - candidates.length)));
 
     if (candidates.length < count && BLOC_COMMON_MISCONCEPTIONS[currentContinentKey]) {
       const used = usedCodes();
@@ -1027,7 +1069,7 @@ const MAJOR_CITIES = {
   ly: { ar: ["بنغازي","مصراتة"], en: ["Benghazi","Misrata"] },
   sd: { ar: ["أم درمان","بورسودان"], en: ["Omdurman","Port Sudan"] },
   ng: { ar: ["لاغوس","كانو","إيبادان"], en: ["Lagos","Kano","Ibadan"] },
-  za: { ar: ["جوهانسبرغ","كيب تاون","ديربان"], en: ["Johannesburg","Cape Town","Durban"] },
+  za: { ar: ["جوهانسبرغ","ديربان"], en: ["Johannesburg","Durban"] },
   ke: { ar: ["مومباسا","كيسومو"], en: ["Mombasa","Kisumu"] },
   gh: { ar: ["كوماسي","تامالي"], en: ["Kumasi","Tamale"] },
   tz: { ar: ["دار السلام","زنجبار"], en: ["Dar es Salaam","Zanzibar City"] },
@@ -1088,6 +1130,10 @@ const MAJOR_CITIES = {
 
   au: { ar: ["سيدني","ملبورن","بريزبن","بيرث"], en: ["Sydney","Melbourne","Brisbane","Perth"] },
   nz: { ar: ["أوكلاند","كرايستشيرش"], en: ["Auckland","Christchurch"] },
+
+  hk: { ar: ["كولون","تسوين وان"], en: ["Kowloon","Tsuen Wan"] },
+  pr: { ar: ["بونسيه","بايامون","كارولينا"], en: ["Ponce","Bayamón","Carolina"] },
+  gl: { ar: ["سيسيميوت","إيلوليسات"], en: ["Sisimiut","Ilulissat"] },
 };
 
 // Builds the shuffled multiple-choice labels for a capital-quiz round:
@@ -1097,12 +1143,13 @@ const MAJOR_CITIES = {
 function buildCapitalChoices(correctCountry, fallbackPool, count) {
   const correctLabel = capOf(correctCountry);
   const wrongLabels = [];
+  const altLabels = capAltsOf(correctCountry);
 
   const cityData = MAJOR_CITIES[correctCountry.code];
   if (cityData) {
     const cityList = LANG === "ar" ? cityData.ar : cityData.en;
     shuffle(cityList).forEach(city => {
-      if (wrongLabels.length < count && city !== correctLabel) wrongLabels.push(city);
+      if (wrongLabels.length < count && city !== correctLabel && !altLabels.includes(city)) wrongLabels.push(city);
     });
   }
 
@@ -1111,11 +1158,241 @@ function buildCapitalChoices(correctCountry, fallbackPool, count) {
     otherCountries.forEach(c => {
       if (wrongLabels.length >= count) return;
       const label = capOf(c);
-      if (label !== correctLabel && !wrongLabels.includes(label)) wrongLabels.push(label);
+      if (label !== correctLabel && !altLabels.includes(label) && !wrongLabels.includes(label)) wrongLabels.push(label);
     });
   }
 
   return shuffle([correctLabel, ...wrongLabels.slice(0, count)]);
+}
+
+/* ---------------------------------------------------------------------
+   Well-known regional monetary unions, used as Tier 1 of the currency
+   wrong-answer logic below: even when the question's country ISN'T a
+   member, a currency that dominates its general geographic area is a
+   genuinely plausible (and therefore genuinely hard) wrong choice — e.g.
+   the Euro for a European non-Eurozone country, or the CFA franc for a
+   West/Central African country outside that specific zone. Each zone
+   lists the NON-member countries the currency should be offered to —
+   actual members would just get filtered out anyway (their own currency
+   already equals the zone currency, so the "already used" check catches
+   it), but listing only non-members keeps this table self-documenting.
+   --------------------------------------------------------------------- */
+const CURRENCY_GRAVITY_ZONES = [
+  { currency: { ar: "يورو", en: "Euro", code: "EUR" },
+    codes: ["al","ad","by","ba","bg","cz","dk","hu","is","xk","li","md","mc","me","mk","no","pl","ro","ru","rs","se","ch","ua","gb","va","gi","im","je","gg","sct","eng","fo"] },
+  { currency: { ar: "فرنك غرب أفريقيا (سيفا)", en: "West African CFA Franc", code: "XOF" },
+    codes: ["gh","ng","gn","lr","sl","gm","cv","mr"] },
+  { currency: { ar: "فرنك وسط أفريقيا (سيفا)", en: "Central African CFA Franc", code: "XAF" },
+    codes: ["ao","cd","st","ss","ng"] },
+  { currency: { ar: "دولار شرق الكاريبي", en: "East Caribbean Dollar", code: "XCD" },
+    codes: ["tt","bb","jm","bs","do","ht"] },
+  { currency: { ar: "دولار أمريكي", en: "US Dollar", code: "USD" },
+    codes: ["gt","hn","ni","cr","bz"] },
+  { currency: { ar: "دولار أسترالي", en: "Australian Dollar", code: "AUD" },
+    codes: ["pg","sb","vu","fj","to","ws","tv","ki","nr","nc","pf"] },
+];
+
+/* ---------------------------------------------------------------------
+   REGIONAL_CURRENCY_REPS — for well-known groupings (Arab League, African
+   Union, Spanish-speaking countries) the wrong answers that really trip a
+   player up aren't the geographic neighbours, they're the OTHER famous
+   currency TYPES of the same group ("who was it that uses the riyal
+   again?"). Each key is a bloc key; each value lists the best-known
+   representative country per currency TYPE inside that group.
+     code                : country code (its real curAr/curEn is what is shown)
+     shortAr / shortEn   : the currency TYPE without the nationality adjective
+                           (used ONLY to make sure one type is never offered
+                           twice, and never the same type as the right answer)
+   Several entries may share one type (e.g. Kuwait AND Jordan for the dinar);
+   the picker shuffles the list and keeps the first of each type, so the
+   dinar option varies between rounds.
+   Not defined for a type = that type has no real representative in the group
+   (e.g. no Arab League member actually uses a "dollar").
+   --------------------------------------------------------------------- */
+const REGIONAL_CURRENCY_REPS = {
+  bloc_arab: [
+    { code: "kw", shortAr: "دينار", shortEn: "Dinar" },
+    { code: "jo", shortAr: "دينار", shortEn: "Dinar" },
+    { code: "ae", shortAr: "درهم",  shortEn: "Dirham" },
+    { code: "sa", shortAr: "ريال",  shortEn: "Riyal" },
+    { code: "eg", shortAr: "جنيه",  shortEn: "Pound" },
+    { code: "lb", shortAr: "ليرة",  shortEn: "Pound" },   // Arabic "ليرة" = English "Lebanese Pound"
+    // no "dollar": no Arab League member uses a dollar
+  ],
+  bloc_au: [
+    { code: "ng", shortAr: "نايرا",  shortEn: "Naira" },
+    { code: "za", shortAr: "راند",   shortEn: "Rand" },
+    { code: "ke", shortAr: "شلن",    shortEn: "Shilling" },
+    { code: "gh", shortAr: "سيدي",   shortEn: "Cedi" },
+    { code: "et", shortAr: "بير",    shortEn: "Birr" },
+    { code: "eg", shortAr: "جنيه",   shortEn: "Pound" },
+    { code: "ma", shortAr: "درهم",   shortEn: "Dirham" },
+    { code: "dz", shortAr: "دينار",  shortEn: "Dinar" },
+    { code: "sn", shortAr: "فرنك",   shortEn: "Franc" },
+    { code: "zm", shortAr: "كواشا",  shortEn: "Kwacha" },
+    { code: "ao", shortAr: "كوانزا", shortEn: "Kwanza" },
+  ],
+  bloc_spanish: [
+    { code: "mx", shortAr: "بيزو",     shortEn: "Peso" },
+    { code: "pe", shortAr: "سول",      shortEn: "Sol" },
+    { code: "ve", shortAr: "بوليفار",  shortEn: "Bolívar" },
+    { code: "cr", shortAr: "كولون",    shortEn: "Colón" },
+    { code: "gt", shortAr: "كتسال",    shortEn: "Quetzal" },
+    { code: "hn", shortAr: "ليمبيرا",  shortEn: "Lempira" },
+    { code: "ni", shortAr: "كوردوبا",  shortEn: "Córdoba" },
+    { code: "py", shortAr: "غواراني",  shortEn: "Guaraní" },
+    { code: "bo", shortAr: "بوليفيانو", shortEn: "Boliviano" },
+    { code: "pa", shortAr: "بالبوا",   shortEn: "Balboa" },
+    { code: "ec", shortAr: "دولار",    shortEn: "Dollar" },
+  ],
+};
+
+// The currency TYPE of a label ("دينار كويتي" -> "دينار", "Kuwaiti Dinar" ->
+// "Dinar"): Arabic puts the type first, English puts it last; a trailing
+// parenthetical like "(سيفا)" is ignored. Used only as a fallback for
+// rows that (by mistake) don't carry explicit curShortAr/curShortEn fields —
+// every row in `countries` has them, so this is a safety net only.
+function curShortFromLabel(label, lang) {
+  if (!label) return "";
+  const words = label.replace(/\s*\(.*?\)\s*/g, " ").trim().split(/\s+/);
+  return lang === "ar" ? words[0] : words[words.length - 1];
+}
+// The currency name as SHOWN to the player: the bare type ("درهم"/"Dirham"),
+// without the nationality adjective. Full name stays in curOf().
+function curShortOf(c, lang = LANG) {
+  const explicit = lang === "ar" ? c.curShortAr : c.curShortEn;
+  return explicit || curShortFromLabel(lang === "ar" ? c.curAr : c.curEn, lang);
+}
+
+// Which REGIONAL_CURRENCY_REPS keys apply to this question, best first:
+// the bloc currently being quizzed (if it has reps), then — only when
+// playing the whole world or a continent — any rep-bloc the question's
+// country belongs to (so "the whole world" or "Africa" still gets the
+// Arab-League mix-ups for an Arab country).
+function regionalRepKeysFor(correct) {
+  const keys = [];
+  if (currentContinentKey && REGIONAL_CURRENCY_REPS[currentContinentKey]) keys.push(currentContinentKey);
+  // Membership fallback only for "world"/continent play — when another bloc
+  // (EU, G7, GCC...) is being quizzed it keeps its original behaviour.
+  if (isBlocKey(currentContinentKey)) return keys;
+  Object.keys(REGIONAL_CURRENCY_REPS).forEach(k => {
+    if (keys.includes(k)) return;
+    const bloc = findBloc(k);
+    if (bloc && bloc.codes.includes(correct.code)) keys.push(k);
+  });
+  return keys;
+}
+
+// Builds the wrong-answer CURRENCIES (not countries) for a currency-quiz
+// question — unlike getWrongOptions, the thing being picked (a currency
+// name) can be shared by many countries, so this returns plain
+// {ar, en, code} currency objects and de-duplicates by currency TEXT
+// (never country code) so the same currency never appears twice.
+// Priority, most-plausible-mix-up first:
+//   Tier 0 — documented real currency relationships: the well-known
+//            regional monetary-union currency for this area
+//            (CURRENCY_GRAVITY_ZONES above), even if the country itself
+//            isn't a member (Euro for a non-Eurozone European country,
+//            CFA franc for a neighbour of the CFA zone, ...).
+//   Tier 1 — the best-known currency TYPES of the same group/bloc
+//            (REGIONAL_CURRENCY_REPS): e.g. for Sudan (pound) inside the
+//            Arab League -> dirham / riyal / dinar / lira. One entry per
+//            TYPE, never the right answer's type, random order each round.
+//            Only active for blocs listed in REGIONAL_CURRENCY_REPS (or
+//            when the question's country belongs to one, even when
+//            playing "the whole world"); every other bloc skips it.
+//   Tier 2 — currencies of the country's actual nearest geographic
+//            neighbours (via getNearestCountries).
+//   Tier 3 — other members of the bloc/continent currently being quizzed.
+//   Tier 4 — random fallback from the rest of the pool.
+function getWrongCurrencyOptions(correct, fallbackPool, count) {
+  // Returned objects carry the SHORT name as their display text (ar/en), so
+  // de-duplication in every tier compares exactly what the player will see.
+  const correctLabel = curShortOf(correct);
+  const picked = [];
+  const asCurrencyObj = c => ({ ar: curShortOf(c, "ar"), en: curShortOf(c, "en"), code: c.curCode });
+  // CURRENCY_GRAVITY_ZONES only stores full names; resolve each zone's short
+  // name through any country that really uses that currency code.
+  const zoneAsCurrencyObj = z => {
+    const user = countries.find(c => c.curCode === z.currency.code);
+    return user ? asCurrencyObj(user) : { ar: curShortFromLabel(z.currency.ar, "ar"), en: curShortFromLabel(z.currency.en, "en"), code: z.currency.code };
+  };
+  const usedLabels = () => new Set([correctLabel, ...picked.map(x => LANG === "ar" ? x.ar : x.en)]);
+
+  // Tier 0 — documented real currency relationships (monetary-union zones)
+  if (picked.length < count) {
+    const used = usedLabels();
+    CURRENCY_GRAVITY_ZONES.forEach(zone => {
+      if (picked.length >= count || !zone.codes.includes(correct.code)) return;
+      const obj = zoneAsCurrencyObj(zone);
+      const label = LANG === "ar" ? obj.ar : obj.en;
+      if (!used.has(label)) { picked.push(obj); used.add(label); }
+    });
+  }
+
+  // Tier 1 — best-known currency types of the same group (one per type)
+  if (picked.length < count) {
+    const used = usedLabels();
+    const usedTypes = new Set([
+      curShortOf(correct),
+      ...picked.map(x => LANG === "ar" ? x.ar : x.en),
+    ]);
+    regionalRepKeysFor(correct).forEach(key => {
+      shuffle(REGIONAL_CURRENCY_REPS[key]).forEach(rep => {
+        if (picked.length >= count) return;
+        const c = findEntity(rep.code);
+        if (!c || c.code === correct.code) return;
+        const type = LANG === "ar" ? rep.shortAr : rep.shortEn;
+        const label = curShortOf(c);
+        if (!label || usedTypes.has(type) || used.has(label)) return;
+        picked.push(asCurrencyObj(c)); used.add(label); usedTypes.add(type);
+      });
+    });
+  }
+
+  // Tier 2 — nearest geographic neighbours' currencies
+  if (picked.length < count) {
+    const used = usedLabels();
+    const neighbors = getNearestCountries(correct.code, count + 6);
+    neighbors.forEach(n => {
+      if (picked.length >= count) return;
+      const label = curShortOf(n);
+      if (label && !used.has(label)) { picked.push(asCurrencyObj(n)); used.add(label); }
+    });
+  }
+
+  // Tier 3 — other members of the bloc/continent currently being quizzed
+  if (picked.length < count && currentContinentKey) {
+    const used = usedLabels();
+    const mates = shuffle(regionCountries(currentContinentKey).filter(c => c.code !== correct.code));
+    mates.forEach(c => {
+      if (picked.length >= count) return;
+      const label = curShortOf(c);
+      if (label && !used.has(label)) { picked.push(asCurrencyObj(c)); used.add(label); }
+    });
+  }
+
+  // Tier 4 — random fallback from the rest of the pool
+  if (picked.length < count) {
+    const used = usedLabels();
+    const source = fallbackPool.length >= count + 1 ? fallbackPool : countries;
+    shuffle(source).forEach(c => {
+      if (picked.length >= count) return;
+      const label = curShortOf(c);
+      if (label && !used.has(label)) { picked.push(asCurrencyObj(c)); used.add(label); }
+    });
+  }
+
+  return picked;
+}
+
+// Builds the shuffled multiple-choice labels for a currency-quiz round —
+// same shape/role as buildCapitalChoices above.
+function buildCurrencyChoices(correctCountry, fallbackPool, count) {
+  const correctLabel = curShortOf(correctCountry);
+  const wrongLabels = getWrongCurrencyOptions(correctCountry, fallbackPool, count)
+    .map(x => LANG === "ar" ? x.ar : x.en);
+  return shuffle([correctLabel, ...wrongLabels]);
 }
 
 const CONTINENTS = [
@@ -1189,7 +1466,18 @@ const BLOCS = [
   { key: "bloc_g7",     emoji: "💼", ar: "مجموعة السبع G7",           en: "G7",
     codes: ["us","gb","fr","de","it","ca","jp"] },
   { key: "bloc_brics",  emoji: "🌐", ar: "بريكس BRICS",               en: "BRICS",
-    codes: ["br","ru","in","cn","za","eg","et","id","ir","sa","ae"] },
+    codes: ["br","ru","in","cn","za","eg","et","id","ir","ae"] },
+  { key: "bloc_gcc",    emoji: "🛢️", ar: "مجلس التعاون الخليجي",        en: "Gulf Cooperation Council",
+    codes: ["sa","ae","qa","bh","kw","om"] },
+  { key: "bloc_au",     emoji: "🌍", ar: "الاتحاد الأفريقي",           en: "African Union",
+    // All 55 members: the 54 UN African states + Western Sahara (SADR, founding member).
+    codes: countries.filter(c => c.cont === "africa").map(c => c.code) },
+  { key: "bloc_commonwealth", emoji: "👑", ar: "الكومنولث",           en: "Commonwealth of Nations",
+    // 56 current members (Gabon & Togo joined 2022; Zimbabwe left 2003).
+    codes: ["gb","ca","au","nz","in","pk","bd","lk","mv","sg","my","bn","cy","mt",
+            "ag","bs","bb","bz","dm","gd","gy","jm","kn","lc","vc","tt",
+            "bw","cm","sz","ga","gm","gh","ke","ls","mw","mu","mz","na","ng","rw","sc","sl","za","tz","tg","ug","zm",
+            "fj","ki","nr","pg","ws","sb","to","tv","vu"] },
   { key: "bloc_asean",  emoji: "🌏", ar: "آسيان ASEAN",               en: "ASEAN",
     codes: ["id","my","ph","sg","th","bn","vn","la","mm","kh"] },
   { key: "bloc_nato",   emoji: "🛡️", ar: "الناتو NATO",               en: "NATO",
@@ -1224,6 +1512,7 @@ function findBloc(key) { return BLOCS.find(b => b.key === key); }
 const BLOC_COMMON_MISCONCEPTIONS = {
   bloc_arab:    ["tr", "ir", "af", "pk"],
   bloc_spanish: ["br", "bz", "ht", "pt"],
+  bloc_french:  ["dz", "ma", "tn", "lb"],
 };
 
 /* ---------------------------------------------------------------------
@@ -1241,6 +1530,7 @@ const STR = {
     categoryFlags: "🏳️ أعلام", categoryFlagsDesc: "خمّن الدولة من علمها",
     categoryZoom: "🔍 زووم إن", categoryZoomDesc: "خمّن الدولة من جزء مكبّر ومقصوص من علمها بس",
     categoryCapitals: "🏛️ عواصم", categoryCapitalsDesc: "خمّن عاصمة كل دولة",
+    categoryCurrencies: "💰 عملات", categoryCurrenciesDesc: "خمّن عملة كل دولة",
     categoryMaps: "🗺️ خرايط", categoryMapsDesc: "حدد مكان الدولة على الخريطة",
     categoryMemory: "🧠 الذاكرة", categoryMemoryDesc: "اكتب الدول واحدة واحدة وشوف علمها يظهر — من غير وقت محدد ولا قلوب",
     memoryTargetCountry: "🏳️ اكتب أسماء الدول", memoryTargetCountryDesc: "اكتب اسم كل دولة عشان علمها يظهر",
@@ -1272,14 +1562,15 @@ const STR = {
     promptMapCountry: n => `فين ${n}؟`,
     promptMapCapital: n => `الدولة اللي عاصمتها ${n} فين؟`,
     remaining: n => `متبقّي ${n} في هذه الجولة`,
-    promptFlag: "دي علم أنهي دولة؟", promptCap: "إيه عاصمة الدولة دي؟",
+    promptFlag: "دي علم أنهي دولة؟", promptCap: "إيه عاصمة الدولة دي؟", promptCur: "إيه عملة الدولة دي؟",
 
     correctBadge: "✅ صح!",
     wrongBadge: n => `❌ الصح: ${n}`,
     tryAgainBadge: "❌ مش هي، جرب تاني",
+    confirmSelection: "تأكيد الاختيار",
     youPickedSub: n => `انت دُست على: ${n}`,
 
-    typePlaceholderCountry: "اكتب اسم الدولة...", typePlaceholderCapital: "اكتب اسم العاصمة...",
+    typePlaceholderCountry: "اكتب اسم الدولة...", typePlaceholderCapital: "اكتب اسم العاصمة...", typePlaceholderCurrency: "اكتب اسم العملة...",
     submit: "تأكيد", next: "التالي ←", sessionScoreLabel: "صح هذه الجولة", streakLabel: "التتابع الحالي",
     ofCount: n => `صح من ${n} دولة`,
 
@@ -1295,6 +1586,7 @@ const STR = {
     practiceDone: "خلّصت كل الدول في التدريب ده — جاهز تجرب الوضع العادي؟",
 
     capitalLabel: n => `العاصمة: ${n}`,
+    currencyLabel: n => `العملة: ${n}`,
     prevBtn: "→ السابقة", studyNextLabel: "التالية ←",
     missedTitle: "الدول اللي غلطت فيها",
 
@@ -1319,6 +1611,7 @@ const STR = {
     categoryFlags: "🏳️ Flags", categoryFlagsDesc: "Guess the country from its flag",
     categoryZoom: "🔍 Zoom In", categoryZoomDesc: "Guess the country from a zoomed-in, cropped piece of its flag only",
     categoryCapitals: "🏛️ Capitals", categoryCapitalsDesc: "Guess each country's capital",
+    categoryCurrencies: "💰 Currencies", categoryCurrenciesDesc: "Guess each country's currency",
     categoryMaps: "🗺️ Maps", categoryMapsDesc: "Locate the country on the map",
     categoryMemory: "🧠 Memory", categoryMemoryDesc: "Type countries one by one and watch their flags appear — no timer pressure, no lives",
     memoryTargetCountry: "🏳️ Type country names", memoryTargetCountryDesc: "Type each country's name to reveal its flag",
@@ -1350,14 +1643,15 @@ const STR = {
     promptMapCountry: n => `Where is ${n}?`,
     promptMapCapital: n => `Where's the country whose capital is ${n}?`,
     remaining: n => `${n} left this round`,
-    promptFlag: "Which country is this flag?", promptCap: "What's the capital of this country?",
+    promptFlag: "Which country is this flag?", promptCap: "What's the capital of this country?", promptCur: "What's the currency of this country?",
 
     correctBadge: "✅ Correct!",
     wrongBadge: n => `❌ Correct: ${n}`,
     tryAgainBadge: "❌ Not quite, try again",
+    confirmSelection: "Confirm selection",
     youPickedSub: n => `You tapped: ${n}`,
 
-    typePlaceholderCountry: "Type the country name...", typePlaceholderCapital: "Type the capital name...",
+    typePlaceholderCountry: "Type the country name...", typePlaceholderCapital: "Type the capital name...", typePlaceholderCurrency: "Type the currency name...",
     submit: "Submit", next: "Next →", sessionScoreLabel: "Correct this round", streakLabel: "Current streak",
     ofCount: n => `correct out of ${n}`,
 
@@ -1373,6 +1667,7 @@ const STR = {
     practiceDone: "You've gone through every country in this practice set — ready for normal mode?",
 
     capitalLabel: n => `Capital: ${n}`,
+    currencyLabel: n => `Currency: ${n}`,
     prevBtn: "→ Previous", studyNextLabel: "Next →",
     missedTitle: "Countries you missed",
 
@@ -1590,6 +1885,12 @@ let LANG = "ar";
 function t() { return STR[LANG]; }
 function nameOf(c) { return LANG === "ar" ? c.ar : c.en; }
 function capOf(c) { return LANG === "ar" ? c.capAr : c.capEn; }
+// Extra capitals accepted when TYPING (never shown as "the" answer).
+function capAltsOf(c) { return (LANG === "ar" ? c.altCapAr : c.altCapEn) || []; }
+function curOf(c) { return LANG === "ar" ? c.curAr : c.curEn; }
+// The ISO 4217 code is also accepted when TYPING a currency (e.g. "EGP"),
+// same idea as capAltsOf above — never shown as "the" answer itself.
+function curAltsOf(c) { return c.curCode ? [c.curCode] : []; }
 function contName(cont) { return LANG === "ar" ? cont.ar : cont.en; }
 function flagUrl(code) { return `https://flagcdn.com/w320/${code}.png`; }
 // Second source, on a different CDN entirely — used automatically if the
@@ -1610,8 +1911,14 @@ const FLAG_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
 function setFlagImage(imgEl, code, revealAnswer) {
   const entity = findEntity(code);
   imgEl.alt = revealAnswer && entity ? nameOf(entity) : (LANG === 'ar' ? 'علم دولة' : 'Country flag');
+  // Skeleton on until the flag (or the final placeholder) has loaded.
+  // Dropping src first stops the previous flag from lingering over it.
+  const done = () => imgEl.classList.remove('flag-loading');
+  imgEl.classList.add('flag-loading');
+  imgEl.removeAttribute('src');
+  imgEl.onload = done;
   if (CUSTOM_FLAG_SVG[code]) {
-    imgEl.onerror = null;
+    imgEl.onerror = done;
     imgEl.src = CUSTOM_FLAG_SVG[code];
     return;
   }
@@ -1620,6 +1927,7 @@ function setFlagImage(imgEl, code, revealAnswer) {
     stage++;
     if (stage === 1) imgEl.src = flagUrlFallback(code);
     else if (stage === 2) imgEl.src = FLAG_PLACEHOLDER;
+    else done();
   };
   imgEl.src = flagUrl(code);
 }
@@ -1689,6 +1997,8 @@ function applyRandomCrop(code, requestId) {
       if (requestId !== cropRequestId) return;
       flagImg.style.transform = 'none';
       flagImg.style.objectPosition = 'center';
+      flagImg.onerror = null;
+      flagImg.onload = () => flagImg.classList.remove('flag-loading');
       flagImg.src = out.toDataURL();
       } catch (err) {
         // Tainted canvas (e.g. a CORS hiccup) or any other failure —
@@ -1754,7 +2064,7 @@ function lightNormalize(str) {
    Progress & scores. Everything below lives in memory only for the
    current page load — no localStorage, so a refresh clears it.
    --------------------------------------------------------------------- */
-const knownByCategory = { flags: new Set(), capitals: new Set(), maps: new Set(), zoom: new Set(), memory: new Set() };
+const knownByCategory = { flags: new Set(), capitals: new Set(), currencies: new Set(), maps: new Set(), zoom: new Set(), memory: new Set() };
 const highScores = {};
 const sessionHistory = []; // one entry per finished round, most recent last
 
@@ -1845,6 +2155,7 @@ const typeSubmit = document.getElementById('typeSubmit');
 const footRow = document.getElementById('footRow');
 const hintBtn = document.getElementById('hintBtn');
 const nextBtn = document.getElementById('nextBtn');
+const mapConfirmBtn = document.getElementById('mapConfirmBtn');
 const studyControls = document.getElementById('studyControls');
 const studyPrevBtn = document.getElementById('studyPrevBtn');
 const studyNextBtn = document.getElementById('studyNextBtn');
@@ -1952,6 +2263,7 @@ function applyStaticText() {
   sessionScoreLabelEl.textContent = t().sessionScoreLabel;
   typeSubmit.textContent = t().submit;
   nextBtn.textContent = t().next;
+  mapConfirmBtn.title = t().confirmSelection; mapConfirmBtn.setAttribute('aria-label', t().confirmSelection);
   hintBtn.textContent = t().hintBtn;
   studyPrevBtn.textContent = t().prevBtn;
   studyNextBtn.textContent = t().studyNextLabel;
@@ -1973,24 +2285,26 @@ langBtn.addEventListener('click', () => {
 /* ---------------------------------------------------------------------
    Selection state, filled in as the player steps through the menus
    --------------------------------------------------------------------- */
-let selectedCategory = 'flags';   // 'flags' | 'capitals' | 'maps'
+let selectedCategory = 'flags';   // 'flags' | 'capitals' | 'currencies' | 'maps' | 'zoom' | 'memory'
 let selectedSpeed = 'normal';     // 'normal' | 'bullet' | 'practice' | 'study'
 let selectedTimeLimit = 60;       // seconds, bullet mode only
 
 /* ---- Screen 1: category ---- */
 function renderCategoryScreen() {
   const cats = [
-    { id: 'flags',    label: t().categoryFlags,    desc: t().categoryFlagsDesc },
-    { id: 'zoom',     label: t().categoryZoom,      desc: t().categoryZoomDesc },
-    { id: 'capitals', label: t().categoryCapitals, desc: t().categoryCapitalsDesc },
-    { id: 'maps',     label: t().categoryMaps,     desc: t().categoryMapsDesc },
-    { id: 'memory',   label: t().categoryMemory,   desc: t().categoryMemoryDesc },
+    { id: 'flags',      label: t().categoryFlags,      desc: t().categoryFlagsDesc },
+    { id: 'zoom',       label: t().categoryZoom,       desc: t().categoryZoomDesc },
+    { id: 'capitals',   label: t().categoryCapitals,   desc: t().categoryCapitalsDesc },
+    { id: 'currencies', label: t().categoryCurrencies, desc: t().categoryCurrenciesDesc },
+    { id: 'maps',       label: t().categoryMaps,       desc: t().categoryMapsDesc },
+    { id: 'memory',     label: t().categoryMemory,     desc: t().categoryMemoryDesc },
   ];
   categoryGrid.innerHTML = '';
   cats.forEach((c, i) => {
     const card = document.createElement('button');
-    // 5 cards: the first 4 sit two-per-row, the last one spans full width below.
-    card.className = i === cats.length - 1 ? 'mode-card cat-card cat-card-wide' : 'mode-card cat-card';
+    // Cards sit two-per-row; only an ODD total leaves a lone last card that
+    // needs to span the full width (same rule as renderContinentGrid's 'wide').
+    card.className = (cats.length % 2 === 1 && i === cats.length - 1) ? 'mode-card cat-card cat-card-wide' : 'mode-card cat-card';
     card.innerHTML = `<div class="cc-name">${c.label}</div><div class="mode-desc">${c.desc}</div>`;
     card.addEventListener('click', () => chooseCategory(c.id));
     categoryGrid.appendChild(card);
@@ -2040,9 +2354,11 @@ function chooseSpeed(id) {
   if (id === 'bullet') { renderTimeScreen(); navTo(timeScreen); return; }
 
   if (id === 'study') {
-    // Reachable only for 'flags', 'capitals', and 'maps' — zoom never offers 'study'.
+    // Reachable only for 'flags', 'capitals', 'currencies', and 'maps' — zoom never offers 'study'.
     currentMode = selectedCategory === 'maps' ? 'map_study'
-      : (selectedCategory === 'capitals' ? 'cap_study' : 'flag_study');
+      : selectedCategory === 'capitals' ? 'cap_study'
+      : selectedCategory === 'currencies' ? 'cur_study'
+      : 'flag_study';
     renderContinentScreen(); navTo(continentScreen); return;
   }
 
@@ -2089,7 +2405,7 @@ function renderFormatScreen() {
       { id: 'memory_capital', label: t().memoryTargetCapital, desc: t().memoryTargetCapitalDesc },
     ];
   } else {
-    const prefix = selectedCategory === 'flags' ? 'flag' : 'cap';
+    const prefix = selectedCategory === 'flags' ? 'flag' : selectedCategory === 'currencies' ? 'cur' : 'cap';
     options = [
       { id: `${prefix}_choice`, label: t().formatChoice, desc: t().formatChoiceDesc },
       { id: `${prefix}_type`,   label: t().formatType,   desc: t().formatTypeDesc },
@@ -2255,10 +2571,15 @@ function isStudyMode() { return selectedSpeed === 'study'; }
 function isPractice() { return selectedSpeed === 'practice' && isMapMode(); }
 function isBullet() { return selectedSpeed === 'bullet' && !isMapMode(); }
 function isCapitalMode() { return currentMode === 'cap_choice' || currentMode === 'cap_type' || currentMode === 'cap_study'; }
-function isTypeMode() { return currentMode === 'flag_type' || currentMode === 'cap_type' || currentMode === 'flag_type_crop'; }
+function isCurrencyMode() { return currentMode === 'cur_choice' || currentMode === 'cur_type' || currentMode === 'cur_study'; }
+function isTypeMode() { return currentMode === 'flag_type' || currentMode === 'cap_type' || currentMode === 'cur_type' || currentMode === 'flag_type_crop'; }
 function isCropMode() { return currentMode === 'flag_choice_crop' || currentMode === 'flag_type_crop'; }
-// Hint is only offered for the flags/capitals categories in normal speed —
+// Hint is available for flags/capitals/currencies in normal speed —
 // bullet has no room for it, practice/study already have no real penalty.
+// (Currencies uses the exact same generic hint as capitals: first-letter
+// reveal in type mode, or strip two wrong choices in choice mode — no
+// currency-specific hint text was needed since that mechanism already
+// works fine once the "correct label" resolves to the currency name.)
 function canHint() { return !isMapMode() && !isStudyMode() && selectedSpeed === 'normal'; }
 function isMemoryMode() { return currentMode === 'memory_country' || currentMode === 'memory_capital'; }
 
@@ -2484,13 +2805,17 @@ function memorySubmitGuess() {
   const candidates = unsolvedMemoryCountries();
 
   let best = null, bestDist = Infinity;
+  let bestLen = 0;
   candidates.forEach(c => {
-    const target = normalize(memoryTargetText(c));
-    const d = levenshtein(query, target);
-    if (d < bestDist) { bestDist = d; best = c; }
+    const texts = [memoryTargetText(c), ...(currentMode === 'memory_capital' ? capAltsOf(c) : [])];
+    texts.forEach(tx => {
+      const target = normalize(tx);
+      const d = levenshtein(query, target);
+      if (d < bestDist) { bestDist = d; best = c; bestLen = target.length; }
+    });
   });
 
-  if (best && bestDist <= typoBudget(normalize(memoryTargetText(best)).length)) {
+  if (best && bestDist <= typoBudget(bestLen)) {
     completeMemoryCountry(best.code);
     memoryInput.value = '';
   } else {
@@ -2815,12 +3140,54 @@ function isPointOnCorrectCountry(x, y) {
   return false;
 }
 
-// Handles a tap on the map. Three modes behave differently on a miss:
+// --- Two-step answering on the map -----------------------------------
+// A tap (only ever called for a real tap, never a drag/pinch — see the
+// `!moved` guard in attachMapInteraction) merely SELECTS a country. The
+// answer is only evaluated when the player presses the ✓ button. Nothing
+// here touches lives / score / attempts / timers.
+let mapSelection = null;   // { x, y } world-space point of the pending tap, or null
+
+function clearMapSelection() {
+  mapSelection = null;
+  mapConfirmBtn.classList.remove('ready');
+  if (currentSvg) currentSvg.querySelectorAll('.map-selection').forEach(el => el.remove());
+}
+
+function onMapAnswer(x, y) {
+  if (isStudyMode() || answered) return;
+
+  // Which country does this tap land on? (the correct one is checked with the
+  // same test the evaluation uses, so highlight and verdict can never disagree)
+  const code = isPointOnCorrectCountry(x, y) ? currentCorrect.code : hitTestCode(x, y);
+  if (!code) return; // tapped empty ocean/background: nothing to select
+
+  // Replace any previous selection — moving it costs nothing.
+  currentSvg.querySelectorAll('.map-selection').forEach(el => el.remove());
+  currentSvg.querySelectorAll(`[data-code="${code}"]`).forEach(src => {
+    const ov = src.cloneNode(false);
+    ov.removeAttribute('data-code');
+    ov.setAttribute('class', 'map-selection');
+    currentSvg.appendChild(ov);
+  });
+  mapSelection = { x, y };
+  mapConfirmBtn.classList.add('ready');
+}
+
+mapConfirmBtn.addEventListener('click', () => {
+  if (!mapSelection || isStudyMode() || answered) return;
+  const { x, y } = mapSelection;
+  clearMapSelection();
+  evaluateMapAnswer(x, y);
+});
+
+// Evaluates an answer at a map point. This is the original tap-handling
+// logic, unchanged — it now just runs on ✓ instead of on the tap itself.
+// Three modes behave differently on a miss:
 //  - normal:   shares MAX_LIVES across the whole round, like the other categories
 //  - practice: never loses a life; each country gets its own 3-try cap,
 //              then reveals the answer and moves on
 //  - study:    taps do nothing (handled by isStudyMode() guard)
-function onMapAnswer(x, y) {
+function evaluateMapAnswer(x, y) {
   if (isStudyMode() || answered) return;
 
   const isCorrect = isPointOnCorrectCountry(x, y);
@@ -2904,6 +3271,7 @@ function renderRound() {
   answered = false;
   mapAttempts = 0;
   hintUsedThisQuestion = false;
+  clearMapSelection();
   verdictBadge.classList.remove('show', 'correct', 'wrong');
   verdictBadge.textContent = '';
   nextBtn.classList.remove('ready');
@@ -2919,6 +3287,7 @@ function renderRound() {
   const mapMode = isMapMode();
   flagFrame.classList.toggle('hidden', mapMode);
   mapWrap.classList.toggle('hidden', !mapMode);
+  mapConfirmBtn.classList.toggle('hidden', !mapMode);
 
   if (mapMode) {
     if (currentSvg) {
@@ -2949,6 +3318,9 @@ function renderRound() {
   flagFrame.classList.toggle('cropped', isCropMode());
   cropRequestId++;
   if (isCropMode()) {
+    flagImg.onload = null; flagImg.onerror = null;
+    flagImg.classList.add('flag-loading');
+    flagImg.removeAttribute('src');
     applyRandomCrop(currentCorrect.code, cropRequestId);
   } else {
     setFlagImage(flagImg, currentCorrect.code, false);
@@ -2957,18 +3329,22 @@ function renderRound() {
   }
 
   const capMode = isCapitalMode();
-  countryLabel.classList.toggle('hidden', !capMode);
-  if (capMode) countryLabel.textContent = nameOf(currentCorrect);
-  promptLabel.textContent = capMode ? t().promptCap : t().promptFlag;
+  const curMode = isCurrencyMode();
+  const askMode = capMode || curMode; // both show flag + country name and ask about a fact of it
+  countryLabel.classList.toggle('hidden', !askMode);
+  if (askMode) countryLabel.textContent = nameOf(currentCorrect);
+  promptLabel.textContent = capMode ? t().promptCap : curMode ? t().promptCur : t().promptFlag;
 
   const typeMode = isTypeMode();
   choicesEl.classList.toggle('hidden', typeMode);
   typeWrap.classList.toggle('hidden', !typeMode);
 
   if (!typeMode) {
-    const correctLabel = capMode ? capOf(currentCorrect) : nameOf(currentCorrect);
+    const correctLabel = capMode ? capOf(currentCorrect) : curMode ? curShortOf(currentCorrect) : nameOf(currentCorrect);
     const labels = capMode
       ? buildCapitalChoices(currentCorrect, pool, 3)
+      : curMode
+      ? buildCurrencyChoices(currentCorrect, pool, 3)
       : shuffle([currentCorrect, ...getWrongOptions(currentCorrect, pool, 3)]).map(nameOf);
     choicesEl.innerHTML = '';
     labels.forEach(label => {
@@ -2979,7 +3355,7 @@ function renderRound() {
       choicesEl.appendChild(btn);
     });
   } else {
-    typeInput.placeholder = capMode ? t().typePlaceholderCapital : t().typePlaceholderCountry;
+    typeInput.placeholder = capMode ? t().typePlaceholderCapital : curMode ? t().typePlaceholderCurrency : t().typePlaceholderCountry;
     typeInput.dir = LANG === 'ar' ? 'rtl' : 'ltr';
     hideSuggestions();
     setTimeout(() => typeInput.focus(), 50);
@@ -3039,7 +3415,7 @@ function renderStudyRound() {
     mapTargetName.classList.remove('hidden');
     mapTargetName.textContent = nameOf(c);
     studyCapitalLabel.classList.remove('hidden');
-    studyCapitalLabel.innerHTML = t().capitalLabel(`<b>${capOf(c)}</b>`);
+    studyCapitalLabel.innerHTML = isCurrencyMode() ? t().currencyLabel(`<b>${curShortOf(c)}</b>`) : t().capitalLabel(`<b>${capOf(c)}</b>`);
     promptLabel.textContent = '';
     return;
   }
@@ -3049,7 +3425,7 @@ function renderStudyRound() {
   countryLabel.classList.remove('hidden');
   countryLabel.textContent = nameOf(c);
   studyCapitalLabel.classList.remove('hidden');
-  studyCapitalLabel.innerHTML = t().capitalLabel(`<b>${capOf(c)}</b>`);
+  studyCapitalLabel.innerHTML = isCurrencyMode() ? t().currencyLabel(`<b>${curShortOf(c)}</b>`) : t().capitalLabel(`<b>${capOf(c)}</b>`);
   promptLabel.textContent = '';
 }
 
@@ -3114,7 +3490,7 @@ function useHint() {
   lives--;
   updateGameHeader();
 
-  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : nameOf(currentCorrect);
+  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : isCurrencyMode() ? curShortOf(currentCorrect) : nameOf(currentCorrect);
 
   if (isTypeMode()) {
     typeInput.value = correctLabel.charAt(0);
@@ -3145,8 +3521,12 @@ function submitTyped() {
   if (answered) return;
   answered = true;
   hideSuggestions();
-  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : nameOf(currentCorrect);
-  const isCorrect = normalize(typeInput.value) === normalize(correctLabel) && normalize(typeInput.value).length > 0;
+  const correctLabel = isCapitalMode() ? capOf(currentCorrect) : isCurrencyMode() ? curShortOf(currentCorrect) : nameOf(currentCorrect);
+  const typed = normalize(typeInput.value);
+  // Currency mode: the short name (correctLabel) is the primary answer; the
+  // full name ("ريال عماني") and ISO code ("OMR") are extra accepted forms.
+  const accepted = [correctLabel, ...(isCapitalMode() ? capAltsOf(currentCorrect) : isCurrencyMode() ? [curOf(currentCorrect), ...curAltsOf(currentCorrect)] : [])].map(normalize);
+  const isCorrect = typed.length > 0 && accepted.includes(typed);
   typeInput.disabled = true;
   typeSubmit.disabled = true;
   handleAnswerResult(isCorrect, correctLabel);
@@ -3170,11 +3550,22 @@ function renderSuggestions() {
   if (!query) { hideSuggestions(); return; }
 
   const capMode = isCapitalMode();
-  const labelOf = c => capMode ? capOf(c) : nameOf(c);
+  const curMode = isCurrencyMode();
+  const labelOf = c => capMode ? capOf(c) : curMode ? curShortOf(c) : nameOf(c);
 
-  const matches = pool
-    .filter(c => lightNormalize(labelOf(c)).startsWith(query))
-    .slice(0, 6);
+  let matches = pool.filter(c => lightNormalize(labelOf(c)).startsWith(query));
+  if (curMode) {
+    // Many countries share one currency (eurozone, CFA franc...) — show
+    // each distinct currency name once instead of repeating it per country.
+    const seen = new Set();
+    matches = matches.filter(c => {
+      const label = labelOf(c);
+      if (seen.has(label)) return false;
+      seen.add(label);
+      return true;
+    });
+  }
+  matches = matches.slice(0, 6);
 
   if (!matches.length) { hideSuggestions(); return; }
 
@@ -3211,6 +3602,7 @@ nextBtn.addEventListener('click', () => {
 function endGame(reason) {
   lastEndReason = reason;
   stopBulletTimer();
+  clearMapSelection(); // a pending, unconfirmed selection is simply discarded — never scored
 
   const key = highScoreKey(currentContinentKey);
   highScores[key] = Math.max(highScores[key] || 0, sessionCorrect);
@@ -3329,6 +3721,7 @@ function categoryLabel(category) {
   if (category === 'flags') return t().categoryFlags;
   if (category === 'zoom') return t().categoryZoom;
   if (category === 'capitals') return t().categoryCapitals;
+  if (category === 'currencies') return t().categoryCurrencies;
   if (category === 'memory') return t().categoryMemory;
   return t().categoryMaps;
 }
