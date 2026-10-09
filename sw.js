@@ -1,5 +1,5 @@
 /* Service worker — خمّن العلم (offline support) */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = 'flag-shell-' + VERSION;
 const FLAG_CACHE = 'flag-images-v1';   // flags rarely change; keep across app versions
 const SHELL = [
