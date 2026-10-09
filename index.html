@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#0a1626">
 <meta name="description" content="لعبة تخمين أعلام وعواصم وخرائط دول العالم — تشتغل أوفلاين">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon/favicon-32.png">
+<link rel="apple-touch-icon" href="icon/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="خمّن العلم">
@@ -1904,7 +1904,7 @@ function contName(cont) { return LANG === "ar" ? cont.ar : cont.en; }
 function flagUrl(code) { return `https://flagcdn.com/w320/${code}.png`; }
 // Second source, on a different CDN entirely — used automatically if the
 // primary flag image fails to load (blocked network, ad blocker, outage).
-function flagUrlFallback(code) { return `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/flags/4x3/${code}.svg`; }
+function flagUrlFallback(code) { return `https://cdn.jsdelivr.net/gh/lipis/flag-icon@7.2.3/flags/4x3/${code}.svg`; }
 // Last resort if BOTH sources fail — a neutral placeholder that never
 // reveals anything, so a broken image can never hand out the answer.
 const FLAG_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
